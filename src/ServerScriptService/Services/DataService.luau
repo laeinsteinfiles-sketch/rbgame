@@ -93,6 +93,22 @@ function DataService.push(player: Player)
 	end
 end
 
+local pushScheduled: { [Player]: boolean } = {}
+
+--- Coalesces frequent small changes (ore collected) into one push.
+function DataService.pushSoon(player: Player)
+	if pushScheduled[player] then
+		return
+	end
+	pushScheduled[player] = true
+	task.delay(1.5, function()
+		pushScheduled[player] = nil
+		if player.Parent == Players then
+			DataService.push(player)
+		end
+	end)
+end
+
 function DataService.get(player: Player): ProfileData?
 	local profile = profiles[player]
 	if profile and profile:IsActive() then
@@ -124,6 +140,18 @@ local function onPlayerAdded(store: any, player: Player)
 		return
 	end
 	profile:AddUserId(player.UserId)
+	-- Migrate first so renamed keys move before Reconcile fills new ones; a
+	-- failed migration releases the session instead of leaving it locked.
+	local migrated, err = pcall(function(): string?
+		migrate(profile.Data)
+		return nil
+	end)
+	if not migrated then
+		warn(`[DataService] migration failed for {player.UserId}: {err}`)
+		profile:EndSession()
+		player:Kick("Your data could not be upgraded. Please rejoin later.")
+		return
+	end
 	profile:Reconcile()
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
@@ -135,7 +163,6 @@ local function onPlayerAdded(store: any, player: Player)
 		profile:EndSession()
 		return
 	end
-	migrate(profile.Data)
 	profiles[player] = profile
 	player:SetAttribute("Loaded", true)
 	DataService.push(player)
