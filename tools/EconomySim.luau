@@ -2,17 +2,19 @@
 -- Explorer: ServerStorage/EconomySim (ModuleScript)
 -- Also runnable outside Studio via tools/run_sim.py (bundles with the luau CLI).
 --
--- Single-player pacing model. It plays the real OreGen with real config
--- numbers using a simple "focused" policy: dig, sell when the pack is full or
--- when the next upgrade is affordable, buy drill first and pack second.
--- Multiplayer effects (Mega Drill, catch-up) are deliberately excluded: the
--- targets in the brief describe one focused player.
+-- Single-player pacing model. It plays the real Course (pockets, blasts,
+-- chests) and the real OreGen with real config numbers, using a simple
+-- "focused" policy: dig, sell when the pack is full or when the next upgrade
+-- is affordable, buy drill first and pack second. Multiplayer effects (Mega
+-- Drill, catch-up) are deliberately excluded: the targets in the brief
+-- describe one focused player.
 --
 -- Studio command bar:
 --   local Sim = require(game.ServerStorage.EconomySim)
 --   local RS = game.ReplicatedStorage
 --   Sim.run({ GameConfig = require(RS.Config.GameConfig), Layers = require(RS.Shared.Layers),
---             Economy = require(RS.Shared.Economy), OreGen = require(RS.Shared.OreGen) }, { seeds = 40 })
+--             Economy = require(RS.Shared.Economy), OreGen = require(RS.Shared.OreGen),
+--             Course = require(RS.Shared.Course) }, { seeds = 40 })
 
 local EconomySim = {}
 
@@ -21,6 +23,7 @@ export type Deps = {
 	Layers: any,
 	Economy: any,
 	OreGen: any,
+	Course: any,
 }
 
 export type Options = {
@@ -42,14 +45,19 @@ export type RunResult = {
 	trips: number,
 	depthAtMinute: { number },
 	cashEarned: number,
+	chestCash: number,
+	pocketMetres: number,
+	blasts: number,
 }
 
 local SELL_SECONDS = 1.5
+local GRAVITY = 196.2
 
-local function simulate(deps: Deps, seed: number, opts: Options): RunResult
-	local cfg, Layers, Economy, OreGen = deps.GameConfig, deps.Layers, deps.Economy, deps.OreGen
+local function simulate(deps: Deps, lootSeed: number, courseSeed: number, opts: Options): RunResult
+	local cfg, Layers, Economy, OreGen, Course = deps.GameConfig, deps.Layers, deps.Economy, deps.OreGen, deps.Course
 	local maxTime = opts.maxTime or cfg.Round.ActiveSeconds
 	local casual = opts.policy == "casual"
+	local blockHeight = cfg.Geometry.BlockHeight
 
 	local t = 0
 	local depth = 0
@@ -71,6 +79,9 @@ local function simulate(deps: Deps, seed: number, opts: Options): RunResult
 		trips = 0,
 		depthAtMinute = {},
 		cashEarned = 0,
+		chestCash = 0,
+		pocketMetres = 0,
+		blasts = 0,
 	}
 	local nextMinuteMark = 60
 
@@ -116,7 +127,39 @@ local function simulate(deps: Deps, seed: number, opts: Options): RunResult
 		local index = depth + 1
 		local power = Economy.drillPower({ drillTier = drill, metaDigLevel = 0, megaActive = false, catchUp = 0 })
 		t += Economy.minInterval(index, power)
-		depth = index
+
+		local resolution = Course.resolve(courseSeed, index)
+		local fallen = resolution.finalDepth - index
+		if fallen > 0 then
+			-- A longer drop than one block costs real fall time on top of DropTime.
+			local h = blockHeight * (fallen + 1)
+			t += math.sqrt(2 * h / GRAVITY) - math.sqrt(2 * blockHeight / GRAVITY)
+		end
+		for _, broken in resolution.broken do
+			if broken.kind == "pocket" then
+				r.pocketMetres += 1
+				continue
+			end
+			if broken.kind == "blast" and broken.index == index then
+				r.blasts += 1
+			end
+			if broken.kind == "chest" then
+				local amount = Course.chestCash(broken.index)
+				cash += amount
+				earned += amount
+				r.chestCash += amount
+				tryBuy()
+			end
+			local roll = OreGen.roll(lootSeed, broken.index)
+			if roll.oreId then
+				r.firstOre = r.firstOre or t
+				if units < capacity() then
+					units += 1
+					packValue += Economy.oreValue(roll.oreId, roll.mutationId)
+				end
+			end
+		end
+		depth = resolution.finalDepth
 
 		while t >= nextMinuteMark and nextMinuteMark <= maxTime do
 			table.insert(r.depthAtMinute, depth)
@@ -126,15 +169,6 @@ local function simulate(deps: Deps, seed: number, opts: Options): RunResult
 		local layerIndex = Layers.indexAt(depth)
 		if not r.layerTimes[layerIndex] then
 			r.layerTimes[layerIndex] = t
-		end
-
-		local roll = OreGen.roll(seed, index)
-		if roll.oreId then
-			r.firstOre = r.firstOre or t
-			if units < capacity() then
-				units += 1
-				packValue += Economy.oreValue(roll.oreId, roll.mutationId)
-			end
 		end
 
 		local drillCost = Economy.upgradeCost("drill", drill)
@@ -198,6 +232,14 @@ local function stats(list: { number? }, count: number): string
 	)
 end
 
+local function mean(results: { RunResult }, getter: (RunResult) -> number): number
+	local sum = 0
+	for _, r in results do
+		sum += getter(r)
+	end
+	return sum / math.max(1, #results)
+end
+
 function EconomySim.run(deps: Deps, opts: Options?): { RunResult }
 	local options: Options = opts or {}
 	local log: (string) -> () = options.log or print
@@ -206,7 +248,7 @@ function EconomySim.run(deps: Deps, opts: Options?): { RunResult }
 
 	local results: { RunResult } = {}
 	for i = 1, seedCount do
-		results[i] = simulate(deps, 1000 + i * 7919, options)
+		results[i] = simulate(deps, 1000 + i * 7919, 50021 + i * 104729, options)
 	end
 
 	local function column(getter: (RunResult) -> number?): { number? }
@@ -232,6 +274,13 @@ function EconomySim.run(deps: Deps, opts: Options?): { RunResult }
 	for tier = 2, #cfg.Packs do
 		log(string.format("pack tier %d    %s", tier, stats(column(function(r) return r.packTimes[tier] end), seedCount)))
 	end
+	log(string.format(
+		"course per run: %.1f m free-fall, %.1f blasts, $%d from chests (%.0f%% of income)",
+		mean(results, function(r) return r.pocketMetres end),
+		mean(results, function(r) return r.blasts end),
+		math.floor(mean(results, function(r) return r.chestCash end)),
+		100 * mean(results, function(r) return r.chestCash end) / math.max(1, mean(results, function(r) return r.cashEarned end))
+	))
 
 	local first = results[1]
 	local line = "depth by minute (seed 1):"
