@@ -1,8 +1,9 @@
 --!strict
 -- Explorer: ServerScriptService/Services/MetaService (ModuleScript)
--- The persistent layer: gems, relics, capped perks, pets, skins, collection
--- rewards and gamepass ownership. Nothing here can change who wins a round:
--- the only perk that touches the race is dig speed, capped at +10%.
+-- The persistent layer: gems, relics, capped perks, eggs (pets with sizes),
+-- skins, collection rewards, settings and gamepass ownership. Nothing here
+-- can change who wins a round: the only perk that touches the race is dig
+-- speed, capped at +10%.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -28,9 +29,17 @@ MetaService.onPassesRefreshed = Signal.new() :: Signal.Signal<Player>
 local passCache: { [Player]: { [string]: boolean } } = {}
 local rng = Random.new()
 
-local petById: { [string]: typeof(GameConfig.Pets.List[1]) } = {}
-for _, pet in GameConfig.Pets.List do
+local petById: { [string]: typeof(GameConfig.Pets[1]) } = {}
+for _, pet in GameConfig.Pets do
 	petById[pet.id] = pet
+end
+local sizeById: { [string]: typeof(GameConfig.PetSizes[1]) } = {}
+for _, size in GameConfig.PetSizes do
+	sizeById[size.id] = size
+end
+local eggById: { [string]: typeof(GameConfig.Eggs[1]) } = {}
+for _, egg in GameConfig.Eggs do
+	eggById[egg.id] = egg
 end
 local skinById: { [string]: typeof(GameConfig.Skins[1]) } = {}
 for _, skin in GameConfig.Skins do
@@ -39,6 +48,15 @@ end
 
 local function notify(player: Player, kind: string, message: string)
 	Remotes.get("Notify"):FireClient(player, kind, message)
+end
+
+--- "mole:huge" -> pet def, size def (nil if either part is unknown).
+function MetaService.parsePetKey(key: string): (typeof(GameConfig.Pets[1])?, typeof(GameConfig.PetSizes[1])?)
+	local petId, sizeId = string.match(key, "^(%w+):(%w+)$")
+	if not petId or not sizeId then
+		return nil, nil
+	end
+	return petById[petId], sizeById[sizeId]
 end
 
 local function refreshPasses(player: Player)
@@ -72,9 +90,9 @@ function MetaService.gemMultiplier(player: Player): number
 	local mult = if MetaService.ownsPass(player, "DoubleGems") then 2 else 1
 	local data = DataService.get(player)
 	if data then
-		local pet = petById[data.purchases.equippedPet]
-		if pet then
-			mult *= 1 + pet.gemBonus
+		local pet, size = MetaService.parsePetKey(data.purchases.equippedPet)
+		if pet and size then
+			mult *= 1 + pet.gemBonus * size.mult
 		end
 	end
 	return mult
@@ -147,42 +165,49 @@ local function buySkin(player: Player, skinId: string)
 	notify(player, "buy", `{skin.name} unlocked`)
 end
 
-local function openEgg(player: Player)
+-- Rolls one entry from a { chance = percent } list.
+local function pick<T>(list: { T }, chanceOf: (T) -> number): T
+	local roll = rng:NextNumber() * 100
+	local acc = 0
+	for _, entry in list do
+		acc += chanceOf(entry)
+		if roll < acc then
+			return entry
+		end
+	end
+	return list[#list]
+end
+
+local function openEgg(player: Player, eggId: string)
 	local data = DataService.get(player)
-	if not data then
+	local egg = eggById[eggId]
+	if not data or not egg then
 		return
 	end
-	if data.gems < GameConfig.Pets.EggCost then
+	if data.gems < egg.cost then
 		notify(player, "error", "Not enough gems")
 		return
 	end
-	data.gems -= GameConfig.Pets.EggCost
-
-	local roll = rng:NextNumber() * 100
-	local acc = 0
-	local tier = GameConfig.Pets.Odds[1].tier
-	for _, entry in GameConfig.Pets.Odds do
-		acc += entry.chance
-		if roll < acc then
-			tier = entry.tier
-			break
-		end
+	data.gems -= egg.cost
+	local petEntry = pick(egg.pets, function(e)
+		return e.chance
+	end)
+	local size = pick(GameConfig.PetSizes, function(s)
+		return s.chance
+	end)
+	local owned = data.purchases.pets[petEntry.id]
+	if not owned then
+		owned = {}
+		data.purchases.pets[petEntry.id] = owned
 	end
-	local candidates = {}
-	for _, pet in GameConfig.Pets.List do
-		if pet.tier == tier then
-			table.insert(candidates, pet)
-		end
-	end
-	local pet = candidates[rng:NextInteger(1, #candidates)]
-	local duplicate = (data.purchases.pets[pet.id] or 0) > 0
-	data.purchases.pets[pet.id] = (data.purchases.pets[pet.id] or 0) + 1
+	local duplicate = (owned[size.id] or 0) > 0
+	owned[size.id] = (owned[size.id] or 0) + 1
 	if duplicate then
-		-- Duplicates refund a third of the egg so repeat rolls never feel like nothing.
-		data.gems += math.floor(GameConfig.Pets.EggCost / 3)
+		data.gems += math.floor(egg.cost * GameConfig.DuplicateRefund)
 	end
+	data.purchases.eggsOpened += 1
 	DataService.push(player)
-	Remotes.get("EggResult"):FireClient(player, pet.id, duplicate)
+	Remotes.get("EggResult"):FireClient(player, egg.id, petEntry.id, size.id, duplicate)
 end
 
 local function equip(player: Player, kind: string, id: string)
@@ -196,8 +221,14 @@ local function equip(player: Player, kind: string, id: string)
 			data.purchases.equippedSkin = id
 		end
 	elseif kind == "pet" then
-		if id == "" or (petById[id] and (data.purchases.pets[id] or 0) > 0) then
-			data.purchases.equippedPet = id
+		if id == "" then
+			data.purchases.equippedPet = ""
+		else
+			local pet, size = MetaService.parsePetKey(id)
+			local counts = pet and data.purchases.pets[pet.id]
+			if pet and size and counts and (counts[size.id] or 0) > 0 then
+				data.purchases.equippedPet = id
+			end
 		end
 	end
 	DataService.push(player)
@@ -225,6 +256,23 @@ local function claimCollection(player: Player, oreId: string, thresholdIndex: nu
 	MetaService.awardGems(player, Economy.collectionReward(oreId, thresholdIndex), `{Economy.oreById[oreId].name} collection`)
 end
 
+local function saveSettings(player: Player, settings: any)
+	local data = DataService.get(player)
+	if not data or typeof(settings) ~= "table" then
+		return
+	end
+	local sfx, shake, autoDig = settings.sfx, settings.shake, settings.autoDig
+	if typeof(sfx) == "number" and sfx == sfx then
+		data.settings.sfx = math.clamp(sfx, 0, 1)
+	end
+	if typeof(shake) == "boolean" then
+		data.settings.shake = shake
+	end
+	if typeof(autoDig) == "boolean" then
+		data.settings.autoDig = autoDig
+	end
+end
+
 --- Records a collected ore in the persistent collection book.
 function MetaService.recordCollect(player: Player, oreId: string, mutationId: string)
 	local data = DataService.get(player)
@@ -246,6 +294,7 @@ function MetaService.init()
 	local claimLimiter = RateLimiter.new(limits.ClaimCollection.capacity, limits.ClaimCollection.refill)
 	local eggLimiter = RateLimiter.new(limits.OpenEgg.capacity, limits.OpenEgg.refill)
 	local equipLimiter = RateLimiter.new(limits.Equip.capacity, limits.Equip.refill)
+	local settingsLimiter = RateLimiter.new(limits.SaveSettings.capacity, limits.SaveSettings.refill)
 
 	Remotes.get("BuyMeta").OnServerEvent:Connect(function(player, kind, id)
 		if not buyLimiter:allow(player) then
@@ -257,25 +306,24 @@ function MetaService.init()
 			buySkin(player, id)
 		end
 	end)
-
 	Remotes.get("ClaimCollection").OnServerEvent:Connect(function(player, oreId, thresholdIndex)
-		if not claimLimiter:allow(player) then
-			return
-		end
-		if typeof(oreId) == "string" and typeof(thresholdIndex) == "number" then
+		if claimLimiter:allow(player) and typeof(oreId) == "string" and typeof(thresholdIndex) == "number" then
 			claimCollection(player, oreId, math.floor(thresholdIndex))
 		end
 	end)
-
-	Remotes.get("OpenEgg").OnServerEvent:Connect(function(player)
-		if eggLimiter:allow(player) then
-			openEgg(player)
+	Remotes.get("OpenEgg").OnServerEvent:Connect(function(player, eggId)
+		if eggLimiter:allow(player) and typeof(eggId) == "string" then
+			openEgg(player, eggId)
 		end
 	end)
-
 	Remotes.get("Equip").OnServerEvent:Connect(function(player, kind, id)
 		if equipLimiter:allow(player) and typeof(kind) == "string" and typeof(id) == "string" then
 			equip(player, kind, id)
+		end
+	end)
+	Remotes.get("SaveSettings").OnServerEvent:Connect(function(player, settings)
+		if settingsLimiter:allow(player) then
+			saveSettings(player, settings)
 		end
 	end)
 
@@ -284,16 +332,14 @@ function MetaService.init()
 			refreshPasses(player)
 		end
 	end)
-
 	DataService.onLoaded:Connect(function(player)
 		refreshPasses(player)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		passCache[player] = nil
-		buyLimiter:forget(player)
-		claimLimiter:forget(player)
-		eggLimiter:forget(player)
-		equipLimiter:forget(player)
+		for _, limiter in { buyLimiter, claimLimiter, eggLimiter, equipLimiter, settingsLimiter } do
+			limiter:forget(player)
+		end
 	end)
 end
 
