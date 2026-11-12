@@ -4,11 +4,14 @@
 -- require the same instances through PlayerScripts.
 
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local AssetIds = require(ReplicatedStorage.Config.AssetIds)
 local Controllers = script.Parent.Controllers
 
+local CameraController = require(Controllers.CameraController)
 local ClientState = require(Controllers.ClientState)
 local DigController = require(Controllers.DigController)
 local DrillRig = require(Controllers.DrillRig)
@@ -21,36 +24,61 @@ local player = Players.LocalPlayer
 ClientState.init()
 SFX.init()
 LayerFX.init()
+CameraController.init()
 ShaftRenderer.init()
 DigController.init()
 DrillRig.init()
 
--- The shaft follows the assigned plot; PlotIndex arrives right after join.
+-- Saved settings arrive with the first profile sync and every change in the
+-- settings screen fires onSettings; the controllers own sound and motion.
+local function applySettings()
+	SFX.setVolume(ClientState.settings.sfxVolume)
+	LayerFX.setShakeEnabled(ClientState.settings.shake)
+	CameraController.setEnabled(ClientState.settings.shake)
+end
+ClientState.onSettings:Connect(applySettings)
+applySettings()
+
+-- The shaft is drawn in the assigned island's frame; PlotIndex arrives
+-- right after join and the island models are built at server boot.
 ClientState.onAttr("PlotIndex", function(index)
 	if typeof(index) ~= "number" then
 		return
 	end
 	task.spawn(function()
-		local model = workspace:WaitForChild(`Plot{index}`, 10)
-		local center = ClientState.plotCenter()
-		if model and model:IsA("Model") and center then
+		local world = Workspace:WaitForChild("World", 10)
+		local model = world and world:WaitForChild(`Plot{index}`, 10)
+		if model and model:IsA("Model") and player:GetAttribute("PlotIndex") == index then
 			ShaftRenderer.hideCap(model)
-			ShaftRenderer.setCenter(center)
+			ShaftRenderer.setFrame(model:GetPivot())
 		end
 	end)
 end)
 
--- A new seed means a new round: rebuild from the server's depth.
-ClientState.onAttr("Seed", function(seed)
-	if typeof(seed) == "number" then
-		ShaftRenderer.reset(seed, ClientState.number("Depth", 0))
-		LayerFX.setDepth(ClientState.number("Depth", 0), true)
+-- A new RoundKey means a new round: rebuild the shared course with this
+-- player's loot seed from the server's depth.
+ClientState.onAttr("RoundKey", function()
+	local courseSeed, lootSeed = ClientState.seeds()
+	if courseSeed and lootSeed then
+		local depth = ClientState.number("Depth", 0)
+		ShaftRenderer.reset(courseSeed, lootSeed, depth)
+		LayerFX.setDepth(depth, true)
 	end
 end)
 
 ClientState.onAttr("Traveling", function(direction)
 	if typeof(direction) == "string" and direction ~= "" then
 		SFX.play("ElevatorMove", { volume = 0.5 })
+	end
+end)
+
+-- Prompts that only open UI (workshop, egg shrines) carry OpensScreen; the
+-- screen itself still goes through the normal server-validated remotes.
+ProximityPromptService.PromptTriggered:Connect(function(prompt)
+	local screen = prompt:GetAttribute("OpensScreen")
+	if typeof(screen) == "string" then
+		local arg = prompt:GetAttribute("ScreenArg")
+		ClientState.onOpenScreen:Fire(screen, if typeof(arg) == "string" then arg else nil)
 	end
 end)
 
