@@ -10,6 +10,7 @@ local Base = require(script.Parent.Components.Base)
 local Modal = require(script.Parent.Components.Modal)
 local Toast = require(script.Parent.Components.Toast)
 local Collection = require(script.Parent.Screens.Collection)
+local Hatch = require(script.Parent.Screens.Hatch)
 local HUD = require(script.Parent.Screens.HUD)
 local Leaderboard = require(script.Parent.Screens.Leaderboard)
 local MetaShop = require(script.Parent.Screens.MetaShop)
@@ -65,6 +66,24 @@ hud.setMenuAction("Book", collection.toggle)
 hud.setMenuAction("Quests", quests.toggle)
 hud.setMenuAction("Gems", meta.toggle)
 hud.setMenuAction("More", more.toggle)
+
+local hatch = Hatch.new(ctx)
+ctx.state.onEggResult:Connect(hatch.play)
+
+-- World prompts (workshop, egg shrines) open screens by name.
+local screens: { [string]: Modal.Handle } = {
+	Shop = shop,
+	Collection = collection,
+	Quests = quests,
+	MetaShop = meta,
+	More = more,
+}
+ctx.state.onOpenScreen:Connect(function(name)
+	local screen = screens[name]
+	if screen and not screen.isOpen() then
+		screen.open()
+	end
+end)
 
 -- Any modal closes when the round flips to Results so the sheet is readable.
 ctx.state.onRound("Phase", function(phase)

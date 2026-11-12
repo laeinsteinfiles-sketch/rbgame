@@ -16,6 +16,7 @@ UITheme.Colors = {
 	TextOnAccent = Color3.fromHex("1B1E24"),
 	Muted = Color3.fromHex("5A616C"), -- disabled buttons
 	Warn = Color3.fromHex("C9655C"), -- "can't afford", lost ore; used sparingly
+	Ink = Color3.fromHex("15171C"), -- outline on world-space text only
 }
 
 UITheme.Font = {
