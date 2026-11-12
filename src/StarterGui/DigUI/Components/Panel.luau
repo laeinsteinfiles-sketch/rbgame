@@ -1,8 +1,9 @@
 --!strict
 -- Explorer: StarterGui/DigUI/Components/Panel (ModuleScript)
--- Dark slate panel with the 2px lighter outline. Uses the 9-slice sprite once
--- AssetIds.UI.PanelSlice is sourced; until then a rounded Frame with the
--- same colours, so layouts are identical either way.
+-- Panel styles: "light" (white-to-sky gradient with an ink border, modals and
+-- sheets), "card" (flat light card inside panels), "dark" (translucent HUD
+-- pill over the 3D world). Uses the 9-slice sprite if AssetIds.UI.PanelSlice
+-- is ever sourced; layouts are identical either way.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,6 +13,8 @@ local Base = require(script.Parent.Base)
 
 local Panel = {}
 
+export type Style = "light" | "card" | "dark"
+
 export type Props = {
 	parent: Instance,
 	name: string?,
@@ -19,41 +22,64 @@ export type Props = {
 	position: UDim2?,
 	anchor: Vector2?,
 	padding: number?,
-	inset: boolean?, -- darker well for bars/lists inside another panel
+	inset: boolean?, -- legacy alias for style = "card"
+	style: Style?,
+	tint: Color3?, -- card accent: tints the card gradient and border
 	layoutOrder: number?,
+	zIndex: number?,
 }
 
-function Panel.new(props: Props): GuiObject
-	local color = if props.inset then UITheme.Colors.PanelInset else UITheme.Colors.Panel
-	local panel: GuiObject
-	if AssetIds.isSet(AssetIds.UI.PanelSlice) and not props.inset then
-		local image = Instance.new("ImageLabel")
-		image.Image = AssetIds.image(AssetIds.UI.PanelSlice)
-		image.ScaleType = Enum.ScaleType.Slice
-		image.SliceCenter = AssetIds.UI.PanelSliceCenter
-		image.ImageColor3 = color
-		image.BackgroundTransparency = 1
-		panel = image
-	else
-		local frame = Instance.new("Frame")
-		frame.BackgroundColor3 = color
+function Panel.new(props: Props): Frame
+	local style: Style = props.style or (if props.inset then "card" else "light")
+	local frame = Instance.new("Frame")
+	frame.BorderSizePixel = 0
+	frame.Name = props.name or "Panel"
+	frame.Size = props.size
+	frame.Position = props.position or UDim2.new()
+	frame.AnchorPoint = props.anchor or Vector2.zero
+	frame.LayoutOrder = props.layoutOrder or 0
+	frame.ZIndex = props.zIndex or 1
+
+	if style == "light" then
+		frame.BackgroundColor3 = Color3.new(1, 1, 1)
+		Base.gradient(frame, UITheme.Colors.PanelTop, UITheme.Colors.PanelBottom)
 		Base.corner(frame)
-		if not props.inset then
-			Base.stroke(frame)
+		Base.stroke(frame)
+		if AssetIds.isSet(AssetIds.UI.PanelSlice) then
+			local image = Instance.new("ImageLabel")
+			image.Name = "Slice"
+			image.Size = UDim2.fromScale(1, 1)
+			image.BackgroundTransparency = 1
+			image.Image = AssetIds.image(AssetIds.UI.PanelSlice)
+			image.ScaleType = Enum.ScaleType.Slice
+			image.SliceCenter = AssetIds.UI.PanelSliceCenter
+			image.ZIndex = frame.ZIndex
+			image.Parent = frame
 		end
-		panel = frame
+	elseif style == "card" then
+		local tint = props.tint
+		frame.BackgroundColor3 = Color3.new(1, 1, 1)
+		if tint then
+			local h, s, _ = tint:ToHSV()
+			Base.gradient(frame, Color3.fromHSV(h, s * 0.12, 1), Color3.fromHSV(h, s * 0.3, 0.98))
+			Base.stroke(frame, tint, 2.5)
+		else
+			Base.gradient(frame, Color3.new(1, 1, 1), UITheme.Colors.Card)
+			Base.stroke(frame, UITheme.Colors.CardEdge, 2)
+		end
+		Base.corner(frame, 12)
+	else
+		frame.BackgroundColor3 = UITheme.Colors.Shade
+		frame.BackgroundTransparency = 0.3
+		Base.corner(frame)
+		Base.stroke(frame, UITheme.Colors.Ink, 2.5)
 	end
-	panel.Name = props.name or "Panel"
-	panel.Size = props.size
-	panel.Position = props.position or UDim2.new()
-	panel.AnchorPoint = props.anchor or Vector2.zero
-	panel.BorderSizePixel = 0
-	panel.LayoutOrder = props.layoutOrder or 0
+
 	if props.padding ~= 0 then
-		Base.padding(panel, props.padding)
+		Base.padding(frame, props.padding)
 	end
-	panel.Parent = props.parent
-	return panel
+	frame.Parent = props.parent
+	return frame
 end
 
 return Panel

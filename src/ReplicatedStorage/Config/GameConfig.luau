@@ -58,8 +58,12 @@ GameConfig.Dig = {
 	-- Physics drop between blocks. The server's minimum accepted interval is
 	-- digTime + DropTime so a client that skips the fall gains nothing.
 	DropTime = 0.18,
-	ToleranceFraction = 0.12,
-	ToleranceMin = 0.08,
+	-- Timing is judged against a small bank of earned time rather than each
+	-- gap alone, so two requests bunched by lag still pass while sustained
+	-- over-speed does not. Under TooFastFraction of the required gap is a
+	-- violation; anything else that fails is only rejected and resynced.
+	TimeBankSeconds = 0.75,
+	TooFastFraction = 0.5,
 	MaxPositionErrorBlocks = 6,
 	ViolationKickThreshold = 25,
 }
@@ -263,6 +267,7 @@ GameConfig.Skins = {
 -- Token buckets per remote: capacity burst, refill per second.
 GameConfig.RateLimits = {
 	DigRequest = { capacity = 8, refill = 8 },
+	DigHold = { capacity = 6, refill = 4 },
 	SellAll = { capacity = 2, refill = 1 },
 	BuyUpgrade = { capacity = 3, refill = 2 },
 	ClaimQuest = { capacity = 2, refill = 1 },
