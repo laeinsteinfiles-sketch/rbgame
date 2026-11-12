@@ -1,206 +1,235 @@
 --!strict
 -- Explorer: StarterPlayer/StarterPlayerScripts/Controllers/Juice (ModuleScript)
--- World-space feedback: ore pop-outs, dust bursts, floating value text and
--- number count-ups. Every tween names its easing on purpose.
+-- World-space feedback: rock chips and dust on every swing, debris when a
+-- cell breaks, ore nuggets that fly into the player, floating reward text,
+-- TNT blasts and chest coin bursts. Everything is local, short-lived and
+-- capped so a long dig never accumulates parts.
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
-local AssetIds = require(ReplicatedStorage.Config.AssetIds)
-local UITheme = require(ReplicatedStorage.Config.UITheme)
-local Economy = require(ReplicatedStorage.Shared.Economy)
-local Format = require(ReplicatedStorage.Shared.Format)
-local Types = require(ReplicatedStorage.Shared.Types)
-local LayerFX = require(script.Parent.LayerFX)
-local SFX = require(script.Parent.SFX)
-
 local Juice = {}
 
-local POP_UP = TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-local POP_AWAY = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-local FLOAT = TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local MAX_DEBRIS = 60
+local rng = Random.new()
 
 local folder = Instance.new("Folder")
 folder.Name = "LocalJuice"
 folder.Parent = Workspace
 
-local freePops: { Part } = {}
-local freeDust: { Part } = {}
-local freeFloats: { BillboardGui } = {}
+local liveDebris = 0
 
-local function newPop(): Part
-	local part = Instance.new("Part")
-	part.Name = "OrePop"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CastShadow = false
-	part.Size = Vector3.new(1.6, 1.6, 1.6)
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "Burst"
-	emitter.Texture = AssetIds.Particles.Sparkle
-	emitter.Rate = 0
-	emitter.Lifetime = NumberRange.new(0.5, 0.9)
-	emitter.Speed = NumberRange.new(6, 10)
-	emitter.SpreadAngle = Vector2.new(180, 180)
-	emitter.Size = NumberSequence.new(0.5, 0)
-	emitter.Transparency = NumberSequence.new(0, 1)
-	emitter.LightEmission = 1
-	emitter.Parent = part
-	return part
+local DISPLAY_FONT = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Regular)
+
+local function emitterPart(texture: string, lightEmission: number): (Part, ParticleEmitter)
+	local p = Instance.new("Part")
+	p.Name = "Emitter"
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p.Size = Vector3.new(1, 1, 1)
+	p.Parent = folder
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = texture
+	e.Rate = 0
+	e.LightEmission = lightEmission
+	e.Parent = p
+	return p, e
 end
 
-local function newDust(): Part
-	local part = Instance.new("Part")
-	part.Name = "Dust"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.Transparency = 1
-	part.Size = Vector3.new(4, 1, 4)
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "Puff"
-	emitter.Texture = AssetIds.Particles.Dust
-	emitter.Rate = 0
-	emitter.Lifetime = NumberRange.new(0.6, 1.1)
-	emitter.Speed = NumberRange.new(3, 6)
-	emitter.SpreadAngle = Vector2.new(60, 60)
-	emitter.Size = NumberSequence.new(1.5, 3)
-	emitter.Transparency = NumberSequence.new(0.5, 1)
-	emitter.Parent = part
-	return part
+local dustPart, dust = emitterPart("rbxasset://textures/particles/smoke_main.dds", 0)
+dust.Lifetime = NumberRange.new(0.5, 0.9)
+dust.Speed = NumberRange.new(3, 7)
+dust.SpreadAngle = Vector2.new(70, 70)
+dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 3) })
+dust.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+dust.Drag = 4
+dust.EmissionDirection = Enum.NormalId.Back
+
+local sparkPart, sparks = emitterPart("rbxasset://textures/particles/sparkles_main.dds", 1)
+sparks.Lifetime = NumberRange.new(0.4, 0.9)
+sparks.Speed = NumberRange.new(6, 14)
+sparks.SpreadAngle = Vector2.new(180, 180)
+sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+sparks.Drag = 3
+
+local function emitDust(position: Vector3, color: Color3, count: number)
+	dustPart.CFrame = CFrame.new(position)
+	dust.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25))
+	dust:Emit(count)
 end
 
-local function newFloat(): BillboardGui
+function Juice.sparkle(position: Vector3, color: Color3, count: number)
+	sparkPart.CFrame = CFrame.new(position)
+	sparks.Color = ColorSequence.new(color)
+	sparks:Emit(count)
+end
+
+--- Physical rock chips with a short life. Capped globally.
+function Juice.chips(position: Vector3, color: Color3, count: number, speed: number)
+	for _ = 1, count do
+		if liveDebris >= MAX_DEBRIS then
+			return
+		end
+		liveDebris += 1
+		local s = rng:NextNumber(0.35, 0.85)
+		local p = Instance.new("Part")
+		p.Name = "Chip"
+		p.Size = Vector3.new(s, s * rng:NextNumber(0.6, 1), s)
+		p.Color = color:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0, 0.25))
+		p.Material = Enum.Material.Slate
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.CFrame = CFrame.new(position + rng:NextUnitVector() * 0.8) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+		p.AssemblyLinearVelocity = Vector3.new(rng:NextNumber(-1, 1) * speed, rng:NextNumber(0.4, 1.2) * speed, rng:NextNumber(0.2, 1) * speed)
+		p.AssemblyAngularVelocity = rng:NextUnitVector() * 12
+		p.Parent = folder
+		task.delay(0.9, function()
+			liveDebris -= 1
+			p:Destroy()
+		end)
+	end
+end
+
+--- One pickaxe swing landing on a cell face.
+function Juice.hit(position: Vector3, color: Color3)
+	emitDust(position, color, 3)
+	Juice.chips(position, color, 2, 10)
+end
+
+--- A cell breaking apart.
+function Juice.cellBreak(position: Vector3, color: Color3)
+	emitDust(position, color, 10)
+	Juice.chips(position, color, 7, 16)
+end
+
+function Juice.floatText(position: Vector3, text: string, color: Color3, scale: number?)
+	local size = scale or 1
+	local attachment = Instance.new("Attachment")
+	attachment.WorldPosition = position
+	attachment.Parent = Workspace.Terrain
 	local gui = Instance.new("BillboardGui")
-	gui.Name = "FloatText"
+	gui.Size = UDim2.fromOffset(math.floor(220 * size), math.floor(60 * size))
 	gui.AlwaysOnTop = true
-	gui.Size = UDim2.fromOffset(120, 40)
-	gui.StudsOffset = Vector3.new(0, 2, 0)
 	gui.LightInfluence = 0
+	gui.MaxDistance = 220
+	gui.Adornee = attachment
+	gui.Parent = attachment
 	local label = Instance.new("TextLabel")
-	label.Name = "Label"
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
-	label.FontFace = UITheme.Font.Display
-	label.TextSize = 26
-	label.TextStrokeTransparency = 0.6
-	label.TextStrokeColor3 = UITheme.Colors.PanelInset
-	label.Parent = gui
-	return gui
-end
-
---- Ore pops up out of the block, hangs, then whips toward the camera.
-function Juice.orePop(position: Vector3, roll: Types.BlockRoll)
-	local ore = Economy.oreById[roll.oreId or ""]
-	local mutation = Economy.mutationById[roll.mutationId or "none"]
-	local part = table.remove(freePops) or newPop()
-	local color = if roll.relic then Color3.fromHex("F2B33D") else Color3.fromHex(if ore then ore.color else "FFFFFF")
-	local rare = roll.relic or (ore ~= nil and ore.rarity >= 3) or (mutation ~= nil and mutation.id ~= "none")
-	if mutation and mutation.id ~= "none" then
-		color = color:Lerp(Color3.fromHex(mutation.color), 0.45)
-	end
-	part.Color = color
-	part.Material = if rare then Enum.Material.Neon else Enum.Material.SmoothPlastic
-	part.Size = Vector3.new(1.6, 1.6, 1.6)
-	part.CFrame = CFrame.new(position) * CFrame.Angles(0.4, 0.6, 0.2)
-	part.Parent = folder
-
-	local burst = part:FindFirstChild("Burst") :: ParticleEmitter
-	burst.Color = ColorSequence.new(color)
-	if rare then
-		burst:Emit(28)
-		SFX.play("RareSting", { pitch = if roll.relic then 0.9 else 1 })
-		LayerFX.shake(0.12, 0.2)
-	end
-	local rarity = if ore then ore.rarity else 3
-	SFX.play("OreChime", { pitch = 0.85 + rarity * 0.08, volume = 0.5 })
-
-	local up = TweenService:Create(part, POP_UP, {
-		CFrame = CFrame.new(position + Vector3.new(0, 3.2, 0)) * CFrame.Angles(0, 1.2, 0.3),
-		Size = Vector3.new(2.2, 2.2, 2.2),
-	})
-	up:Play()
-	up.Completed:Connect(function()
-		local camera = Workspace.CurrentCamera
-		local target = camera.CFrame.Position + camera.CFrame.LookVector * 4 - camera.CFrame.RightVector * 2
-		local away = TweenService:Create(part, POP_AWAY, { CFrame = CFrame.new(target), Size = Vector3.new(0.2, 0.2, 0.2) })
-		away:Play()
-		away.Completed:Connect(function()
-			part.Parent = nil
-			table.insert(freePops, part)
-		end)
-	end)
-
-	local value = if roll.relic then "Relic" else `+{Format.cash(Economy.oreValue(roll.oreId or "", roll.mutationId))}`
-	Juice.floatText(position + Vector3.new(1.5, 1, 0), value, if roll.relic then UITheme.Colors.Amber else UITheme.Colors.Text)
-end
-
---- Dust puff in the layer's own colour when a block breaks.
-function Juice.blockBreak(position: Vector3, groundColor: Color3)
-	local part = table.remove(freeDust) or newDust()
-	part.CFrame = CFrame.new(position)
-	part.Parent = folder
-	local puff = part:FindFirstChild("Puff") :: ParticleEmitter
-	puff.Color = ColorSequence.new(groundColor)
-	puff:Emit(10)
-	SFX.play("BlockBreak", { pitch = 0.9 + math.random() * 0.2, volume = 0.5 })
-	task.delay(1.2, function()
-		part.Parent = nil
-		table.insert(freeDust, part)
-	end)
-end
-
-function Juice.floatText(position: Vector3, text: string, color: Color3)
-	local gui = table.remove(freeFloats) or newFloat()
-	local label = gui:FindFirstChild("Label") :: TextLabel
+	label.FontFace = DISPLAY_FONT
+	label.TextScaled = true
 	label.Text = text
 	label.TextColor3 = color
-	label.TextTransparency = 0
-	gui.StudsOffsetWorldSpace = Vector3.zero
-	local anchor = Instance.new("Attachment")
-	anchor.Position = position -- Terrain's CFrame is identity, so Position is world space
-	anchor.Parent = Workspace:FindFirstChildOfClass("Terrain")
-	gui.Adornee = anchor
-	gui.Parent = folder
-	local rise = TweenService:Create(gui, FLOAT, { StudsOffsetWorldSpace = Vector3.new(0, 3, 0) })
-	local fade = TweenService:Create(label, FLOAT, { TextTransparency = 1 })
-	rise:Play()
-	fade:Play()
-	fade.Completed:Connect(function()
-		gui.Parent = nil
-		anchor:Destroy()
-		table.insert(freeFloats, gui)
+	label.Parent = gui
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromHex("14161C")
+	stroke.Thickness = 3
+	stroke.Parent = label
+	local scaleObj = Instance.new("UIScale")
+	scaleObj.Scale = 0.4
+	scaleObj.Parent = label
+	TweenService:Create(scaleObj, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	TweenService:Create(gui, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = Vector3.new(0, 4, 0) }):Play()
+	local fade = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.75)
+	TweenService:Create(label, fade, { TextTransparency = 1 }):Play()
+	TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
+	Debris:AddItem(attachment, 1.2)
+end
+
+local function rootPosition(): Vector3?
+	local character = Players.LocalPlayer.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	return if root and root:IsA("BasePart") then root.Position else nil
+end
+
+--- An ore nugget pops out of the rock and flies into the player.
+function Juice.collect(position: Vector3, color: Color3, material: Enum.Material, glow: boolean, onArrive: (() -> ())?)
+	local p = Instance.new("Part")
+	p.Name = "Collect"
+	p.Shape = Enum.PartType.Ball
+	p.Size = Vector3.one * 1.4
+	p.Color = color
+	p.Material = if glow then Enum.Material.Neon else material
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.CFrame = CFrame.new(position)
+	p.Parent = folder
+	if glow then
+		local l = Instance.new("PointLight")
+		l.Color = color
+		l.Range = 8
+		l.Brightness = 2
+		l.Parent = p
+	end
+	local up = TweenService:Create(p, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { CFrame = CFrame.new(position + Vector3.new(0, 2.2, 1.5)) })
+	up:Play()
+	up.Completed:Connect(function()
+		local target = rootPosition() or position
+		local fly = TweenService:Create(p, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { CFrame = CFrame.new(target), Size = Vector3.one * 0.5 })
+		fly:Play()
+		fly.Completed:Connect(function()
+			p:Destroy()
+			if onArrive then
+				onArrive()
+			end
+		end)
 	end)
 end
 
---- Counts a number up over `duration` with Quad-out easing; `fn` gets each frame.
-function Juice.countUp(from: number, to: number, duration: number, fn: (number) -> ())
-	local start = os.clock()
-	local lastTick = 0
-	local connection: RBXScriptConnection
-	connection = RunService.Heartbeat:Connect(function()
-		local t = math.min(1, (os.clock() - start) / duration)
-		local eased = 1 - (1 - t) * (1 - t)
-		fn(from + (to - from) * eased)
-		if to > from and os.clock() - lastTick > 0.05 and t < 1 then
-			lastTick = os.clock()
-			SFX.play("CoinTick", { pitch = 0.9 + eased * 0.4, volume = 0.25 })
-		end
-		if t >= 1 then
-			connection:Disconnect()
-		end
-	end)
+--- Gold coins burst out of a chest, then funnel into the player.
+function Juice.coins(position: Vector3, count: number)
+	for i = 1, count do
+		local coin = Instance.new("Part")
+		coin.Name = "Coin"
+		coin.Shape = Enum.PartType.Cylinder
+		coin.Size = Vector3.new(0.25, 1.1, 1.1)
+		coin.Color = Color3.fromHex("FFC83D")
+		coin.Material = Enum.Material.Metal
+		coin.Anchored = true
+		coin.CanCollide = false
+		coin.CanQuery = false
+		coin.CanTouch = false
+		coin.CastShadow = false
+		local burst = position + Vector3.new(rng:NextNumber(-3, 3), rng:NextNumber(1.5, 4), rng:NextNumber(0.5, 3))
+		coin.CFrame = CFrame.new(position)
+		coin.Parent = folder
+		local out = TweenService:Create(coin, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = CFrame.new(burst) * CFrame.Angles(0, rng:NextNumber(0, 6), math.pi / 2) })
+		task.delay(i * 0.02, function()
+			out:Play()
+		end)
+		out.Completed:Connect(function()
+			local target = rootPosition() or position
+			local fly = TweenService:Create(coin, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.15 + i * 0.02), { CFrame = CFrame.new(target) })
+			fly:Play()
+			fly.Completed:Connect(function()
+				coin:Destroy()
+			end)
+		end)
+	end
 end
 
---- Scale punch for a GUI object (needs a UIScale child; creates one).
-function Juice.punch(object: GuiObject, amount: number?)
-	local scale = object:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
-	scale.Parent = object
-	scale.Scale = 1 + (amount or 0.12)
-	TweenService:Create(scale, UITheme.Easing.Pop, { Scale = 1 }):Play()
+function Juice.explosion(position: Vector3)
+	local blast = Instance.new("Explosion")
+	blast.Position = position
+	blast.BlastPressure = 0
+	blast.BlastRadius = 8
+	blast.DestroyJointRadiusPercent = 0
+	blast.ExplosionType = Enum.ExplosionType.NoCraters
+	blast.Parent = Workspace
+	emitDust(position, Color3.fromHex("6B5B4B"), 24)
+	Juice.chips(position, Color3.fromHex("5A4A3A"), 14, 26)
+	Juice.sparkle(position, Color3.fromHex("FFB13D"), 20)
 end
 
 return Juice
