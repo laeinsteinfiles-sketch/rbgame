@@ -1,0 +1,47 @@
+{
+  "name": "DigToTheCore",
+  "globIgnorePaths": ["**/*.LICENSE.txt"],
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Config": { "$path": "src/ReplicatedStorage/Config" },
+      "Shared": { "$path": "src/ReplicatedStorage/Shared" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/ServerScriptService"
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "EconomySim": { "$path": "tools/EconomySim.luau" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$path": "src/StarterGui"
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": { "FallenPartsDestroyHeight": -6000 }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "ShadowMap",
+        "ClockTime": 14.5,
+        "Brightness": 2,
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 0.6,
+        "EnvironmentSpecularScale": 0.4
+      }
+    },
+    "SoundService": { "$className": "SoundService" }
+  }
+}

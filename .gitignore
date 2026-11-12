@@ -1,0 +1,4 @@
+.tools/
+sourcemap.json
+build/*.luau
+__pycache__/
