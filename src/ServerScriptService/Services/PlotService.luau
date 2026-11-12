@@ -1,134 +1,29 @@
 --!strict
 -- Explorer: ServerScriptService/Services/PlotService (ModuleScript)
--- Twelve floating islands, one private shaft each. The server owns only the
--- surface; everything below is rendered client-side by ShaftRenderer.
+-- Assigns each player one island from the ring and answers "where is this
+-- player's shaft / sell pad / workshop" for every other service.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Config.GameConfig)
-local UITheme = require(ReplicatedStorage.Config.UITheme)
+local WorldService = require(script.Parent.WorldService)
 
 local PlotService = {}
 
 export type Plot = {
 	index: number,
+	frame: CFrame,
 	center: Vector3,
-	model: Model,
-	sellPad: BasePart,
-	cap: BasePart,
-	nameLabel: TextLabel,
+	info: WorldService.IslandInfo,
 	owner: Player?,
 }
 
+local G = GameConfig.Geometry
+local HIP = 3.2 -- root height above the surface a character stands on
+
 local plots: { Plot } = {}
 local plotByPlayer: { [Player]: Plot } = {}
-
-local G = GameConfig.Geometry
-local surfaceLayer = GameConfig.Layers[1]
-
-local function part(name: string, size: Vector3, cframe: CFrame, color: string, material: string, parent: Instance): Part
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Anchored = true
-	p.Size = size
-	p.CFrame = cframe
-	p.Color = Color3.fromHex(color)
-	p.Material = (Enum.Material :: any)[material]
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = parent
-	return p
-end
-
-local function buildSign(parent: Instance, cframe: CFrame): TextLabel
-	local board = part("NameBoard", Vector3.new(12, 3, 0.6), cframe, "23272E", "SmoothPlastic", parent)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.Parent = board
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.FontFace = UITheme.Font.Display
-	label.TextScaled = true
-	label.TextColor3 = UITheme.Colors.Amber
-	label.Text = ""
-	label.Parent = gui
-	return label
-end
-
-local function buildPlot(index: number, center: Vector3): Plot
-	local model = Instance.new("Model")
-	model.Name = `Plot{index}`
-
-	local S, H = G.IslandSize, G.BlockSize
-	local ring = (S - H) / 2
-	local groundY = G.SurfaceY - 1
-	local color, material = surfaceLayer.groundColor, surfaceLayer.material
-	part("North", Vector3.new(S, 2, ring), CFrame.new(center + Vector3.new(0, groundY, -(H / 2 + ring / 2))), color, material, model)
-	part("South", Vector3.new(S, 2, ring), CFrame.new(center + Vector3.new(0, groundY, H / 2 + ring / 2)), color, material, model)
-	part("West", Vector3.new(ring, 2, H), CFrame.new(center + Vector3.new(-(H / 2 + ring / 2), groundY, 0)), color, material, model)
-	part("East", Vector3.new(ring, 2, H), CFrame.new(center + Vector3.new(H / 2 + ring / 2, groundY, 0)), color, material, model)
-
-	-- Collar: a low rim so the shaft reads as a hole from across the map.
-	local rimColor = surfaceLayer.wallColor
-	for _, offset in { Vector3.new(0, 0, -(H / 2 + 0.5)), Vector3.new(0, 0, H / 2 + 0.5) } do
-		part("Rim", Vector3.new(H + 2, 1, 1), CFrame.new(center + offset + Vector3.new(0, G.SurfaceY + 0.5, 0)), rimColor, "Slate", model)
-	end
-	for _, offset in { Vector3.new(-(H / 2 + 0.5), 0, 0), Vector3.new(H / 2 + 0.5, 0, 0) } do
-		part("Rim", Vector3.new(1, 1, H), CFrame.new(center + offset + Vector3.new(0, G.SurfaceY + 0.5, 0)), rimColor, "Slate", model)
-	end
-
-	-- Cap keeps non-owners out of this shaft; the owner's client hides it.
-	local cap = part("ShaftCap", Vector3.new(H, 1, H), CFrame.new(center + Vector3.new(0, G.SurfaceY - 0.5, 0)), color, material, model)
-
-	-- Invisible rails so nobody walks off into the void.
-	for _, def in {
-		{ Vector3.new(S, 8, 1), Vector3.new(0, 3, -S / 2) },
-		{ Vector3.new(S, 8, 1), Vector3.new(0, 3, S / 2) },
-		{ Vector3.new(1, 8, S), Vector3.new(-S / 2, 3, 0) },
-		{ Vector3.new(1, 8, S), Vector3.new(S / 2, 3, 0) },
-	} do
-		local rail = part("Rail", def[1], CFrame.new(center + def[2]), color, "SmoothPlastic", model)
-		rail.Transparency = 1
-	end
-
-	local sellPad = part(
-		"SellPad",
-		Vector3.new(8, 0.4, 8),
-		CFrame.new(center + Vector3.new(G.SellPadOffset, G.SurfaceY + 0.2, 0)),
-		"F2B33D",
-		"SmoothPlastic",
-		model
-	)
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Sell ore"
-	prompt.ObjectText = "Trading post"
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = G.SellRadius
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = sellPad
-
-	local post = part("SellPost", Vector3.new(1, 7, 1), CFrame.new(center + Vector3.new(G.SellPadOffset, G.SurfaceY + 3.5, -5)), "23272E", "SmoothPlastic", model)
-	post.Name = "SellPost"
-
-	local nameLabel = buildSign(model, CFrame.new(center + Vector3.new(0, G.SurfaceY + 4, -S / 2 + 1.5)))
-
-	model.Parent = Workspace
-
-	return {
-		index = index,
-		center = center,
-		model = model,
-		sellPad = sellPad,
-		cap = cap,
-		nameLabel = nameLabel,
-		owner = nil,
-	}
-end
 
 function PlotService.getPlot(player: Player): Plot?
 	return plotByPlayer[player]
@@ -138,32 +33,67 @@ function PlotService.getAll(): { Plot }
 	return plots
 end
 
---- Where a character stands when it is on top of block `depth + 1`.
+--- Root CFrame for a character standing on block `depth + 1`, facing the hub.
 function PlotService.standingCFrame(player: Player, depth: number): CFrame?
 	local plot = plotByPlayer[player]
 	if not plot then
 		return nil
 	end
 	local top = G.SurfaceY - depth * G.BlockHeight
-	return CFrame.new(plot.center + Vector3.new(0, top + 3.5, 0))
+	return plot.frame.Rotation + Vector3.new(plot.center.X, top + HIP, plot.center.Z)
 end
 
+--- Arrival spot after riding up: between the shaft and the trading post.
 function PlotService.surfaceCFrame(player: Player): CFrame?
 	local plot = plotByPlayer[player]
 	if not plot then
 		return nil
 	end
-	return CFrame.new(plot.center + Vector3.new(G.SellPadOffset - 6, G.SurfaceY + 3.5, 0), plot.center + Vector3.new(G.SellPadOffset, G.SurfaceY + 3.5, 0))
+	local pad = plot.info.sellPad.Position
+	local toShaft = Vector3.new(plot.center.X - pad.X, 0, plot.center.Z - pad.Z).Unit
+	local spot = pad + toShaft * 4.5
+	return CFrame.lookAt(Vector3.new(spot.X, G.SurfaceY + HIP, spot.Z), Vector3.new(pad.X, G.SurfaceY + HIP, pad.Z))
+end
+
+function PlotService.homeCFrame(player: Player): CFrame?
+	local plot = plotByPlayer[player]
+	if not plot then
+		return nil
+	end
+	local home = plot.frame * CFrame.new(GameConfig.World.Home.x, HIP, GameConfig.World.Home.z)
+	return CFrame.lookAt(home.Position, Vector3.new(plot.center.X, home.Position.Y, plot.center.Z))
+end
+
+local function near(player: Player, part: BasePart): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then
+		return false
+	end
+	return (root.Position - part.Position).Magnitude <= G.SellRadius
 end
 
 function PlotService.isNearSellPad(player: Player): boolean
 	local plot = plotByPlayer[player]
+	return plot ~= nil and near(player, plot.info.sellPad)
+end
+
+function PlotService.pivot(player: Player, cf: CFrame?)
 	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not plot or not root or not root:IsA("BasePart") then
-		return false
+	if character and cf then
+		character:PivotTo(cf)
 	end
-	return (root.Position - plot.sellPad.Position).Magnitude <= G.SellRadius
+end
+
+function PlotService.teleportHome(player: Player)
+	PlotService.pivot(player, PlotService.homeCFrame(player))
+end
+
+function PlotService.setDepthLabel(player: Player, depth: number)
+	local plot = plotByPlayer[player]
+	if plot then
+		plot.info.depthLabel.Text = `{math.floor(depth)} m`
+	end
 end
 
 local function assign(player: Player)
@@ -171,9 +101,10 @@ local function assign(player: Player)
 		if plot.owner == nil then
 			plot.owner = player
 			plotByPlayer[player] = plot
-			plot.nameLabel.Text = player.DisplayName
+			plot.info.nameLabel.Text = player.DisplayName
+			plot.info.depthLabel.Text = "0 m"
+			plot.info.model:SetAttribute("OwnerUserId", player.UserId)
 			player:SetAttribute("PlotIndex", plot.index)
-			plot.model:SetAttribute("OwnerUserId", player.UserId)
 			return
 		end
 	end
@@ -184,44 +115,28 @@ local function release(player: Player)
 	local plot = plotByPlayer[player]
 	if plot then
 		plot.owner = nil
-		plot.nameLabel.Text = ""
-		plot.model:SetAttribute("OwnerUserId", 0)
+		plot.info.nameLabel.Text = ""
+		plot.info.depthLabel.Text = ""
+		plot.info.model:SetAttribute("OwnerUserId", 0)
 		plotByPlayer[player] = nil
 	end
 end
 
-function PlotService.teleportHome(player: Player)
-	local character = player.Character
-	local cf = PlotService.surfaceCFrame(player)
-	if character and cf then
-		character:PivotTo(cf)
-	end
-end
+--- Where a respawning character should appear; RoundService overrides this
+--- during the podium ceremony.
+PlotService.respawnAt = PlotService.homeCFrame
 
 function PlotService.init()
-	local cols = G.PlotColumns
-	local rows = math.ceil(G.MaxPlayers / cols)
-	for i = 0, G.MaxPlayers - 1 do
-		local col, row = i % cols, i // cols
-		local center = Vector3.new((col - (cols - 1) / 2) * G.PlotSpacing, 0, (row - (rows - 1) / 2) * G.PlotSpacing)
-		plots[i + 1] = buildPlot(i + 1, center)
+	for i, info in WorldService.islands do
+		plots[i] = { index = i, frame = info.frame, center = info.frame.Position, info = info, owner = nil }
 	end
-
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "Spawn"
-	spawn.Anchored = true
-	spawn.Transparency = 1
-	spawn.CanCollide = false
-	spawn.Size = Vector3.new(4, 1, 4)
-	spawn.Position = Vector3.new(0, 60, 0)
-	spawn.Neutral = true
-	spawn.Parent = Workspace
-
 	local function watch(player: Player)
 		assign(player)
 		player.CharacterAdded:Connect(function(character)
 			character:WaitForChild("HumanoidRootPart", 5)
-			task.defer(PlotService.teleportHome, player)
+			task.defer(function()
+				PlotService.pivot(player, PlotService.respawnAt(player))
+			end)
 		end)
 		if player.Character then
 			task.defer(PlotService.teleportHome, player)
