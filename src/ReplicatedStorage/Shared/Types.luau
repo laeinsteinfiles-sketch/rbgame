@@ -20,6 +20,13 @@ export type LayerMood = {
 	contrast: number,
 	tint: string,
 	brightness: number,
+	-- Optional visual extras; LayerFX falls back to neutral values.
+	sunBrightness: number?, -- Lighting.Brightness
+	exposure: number?, -- Lighting.ExposureCompensation
+	atmosphereDecay: string?,
+	atmosphereGlare: number?,
+	bloom: number?, -- BloomEffect.Intensity
+	sunRays: number?, -- SunRaysEffect.Intensity
 }
 
 export type LayerDef = {

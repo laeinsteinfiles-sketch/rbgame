@@ -1,20 +1,20 @@
 --!strict
 -- Explorer: ReplicatedStorage/Config/AssetIds (ModuleScript)
--- Every external asset the game uses, by name. 0 means "not sourced yet":
--- the code treats 0 as absent (no image, no sound, fallback geometry) and
--- SFX/Icon warn once at startup so nothing is silently fake.
--- NEVER type an id here from memory. Source it, record it in ASSETS.md, then
--- paste the id. ASSETS.md lists a suggested source and search term per slot.
+-- Every external asset the game uses, by name. 0 means "not sourced": the
+-- code then falls back to code-built art (icons, panels, meshes) or silence
+-- (audio, warned once at startup).
+-- NEVER type an id here from memory. Verify it, record it in ASSETS.md, then
+-- paste the id.
 
 local AssetIds = {}
 
 AssetIds.UI = {
-	PanelSlice = 0, -- 9-slice dark panel, see ASSETS.md "UI panels"
+	PanelSlice = 0, -- optional 9-slice panel sprite; panels are code-built plates without it
 	PanelSliceCenter = Rect.new(24, 24, 40, 40), -- slice centre for PanelSlice; adjust to the sprite
 }
 
--- One icon set only (game-icons.net, CC BY 3.0, credited in the Credits screen).
--- Every slot here is consumed by a screen; add a slot only with its use.
+-- Optional uploaded icons. Unset slots draw code-built coins/gems/ores or a
+-- colour emoji (Components/Icon), so every slot already renders something.
 AssetIds.Icons = {
 	Depth = 0, -- "plain arrow"
 	Cash = 0, -- "coins"
@@ -61,30 +61,45 @@ AssetIds.Particles = {
 	Ember = "rbxasset://textures/particles/fire_main.dds",
 }
 
+-- Every id below was looked up on 2026-11-12 through
+-- economy.roblox.com/v2/assets/<id>/details: AssetTypeId 3 (Audio),
+-- IsPublicDomain true, uploaded by Roblox (1) or Roblox's licensed partner
+-- libraries Pro Sound Effects (7462895450) and APM Music (7462718749), so
+-- they play in any experience. Names are recorded in ASSETS.md.
 AssetIds.Sounds = {
-	DigHit = 0, -- layered low thud, per dig tick
-	DigTick = 0, -- high mechanical click, layered over DigHit
-	DigLoop = 0, -- drill motor loop while holding
-	BlockBreak = 0, -- crumble when a block pops
-	OreChime = 0, -- short bright chime on ore pickup (pitch-shifted by rarity)
-	RareSting = 0, -- short riser/sting on rarity >= 3 or any mutation
-	Sell = 0, -- cash register / coin pour
-	CoinTick = 0, -- rapid tick layered under the cash count-up
-	UpgradeBuy = 0, -- mechanical ratchet + confirm
-	ButtonTap = 0, -- soft UI tap
-	ButtonDenied = 0, -- short dull buzz
-	LayerEnter = 0, -- deep whoosh + rumble on entering a new layer
-	MegaStart = 0, -- siren/horn + crowd
-	MegaEnd = 0, -- soft gong
-	MegaGoal = 0, -- fanfare
-	RoundStart = 0, -- air horn
-	Countdown = 0, -- beep
-	RoundEnd = 0, -- gong
-	Win = 0, -- short fanfare
-	QuestClaim = 0, -- reward jingle
-	ElevatorMove = 0, -- cable/motor whir
-	EggCrack = 0, -- crack + sparkle
-	CoreReached = 0, -- big resonant hit
+	DigHit = 9118680621, -- Rocks Dirt Impacts In Ground 9 (PSE)
+	DigTick = 16480549947, -- Roblox_Pinball_Tiny_Button_Press_06
+	DigLoop = 16480557782, -- Roblox_Pinball_Joystick_Rotate_Loop_01
+	BlockBreak = 9119037874, -- Shale Break 15 (PSE)
+	OreChime = 17208319162, -- Roblox GUI - Pickup
+	RareSting = 9116421762, -- Magic Transformation 9 (PSE)
+	Sell = 9113728625, -- Cash Register 1 (PSE)
+	CoinTick = 16480549708, -- Roblox_Pinball_Tiny_Button_Press_08
+	UpgradeBuy = 17208380755, -- Roblox GUI - Purchase
+	ButtonTap = 15675032796, -- Roblox_UI_Small_Click
+	ButtonDenied = 17208353912, -- Roblox GUI - Negative
+	LayerEnter = 9120703816, -- Whoosh Combo Of Impacts Bys 1 (PSE)
+	MegaStart = 9113071344, -- Air Horn Bursts 9 (PSE)
+	MegaEnd = 9116985195, -- Motor Wind- Down 5 (PSE)
+	MegaGoal = 9120974708, -- Wrestling Crowd 8 (PSE)
+	RoundStart = 9114402619, -- Ferrari 308 Car Honking Dual Air Horns 9 (PSE)
+	Countdown = 15930291180, -- Roblox_RetroSFX_08
+	RoundEnd = 16480570385, -- Roblox_Pinball_Bumper_Low_Bells_05
+	Win = 12222253, -- victory.wav
+	QuestClaim = 17208361335, -- Roblox GUI - Notification High
+	ElevatorMove = 9118934517, -- Servo Motor 11
+	EggCrack = 9113959343, -- Crack Egg Crunchy 11 (PSE)
+	CoreReached = 3149249837, -- Cannon_Explode
+	Whoosh = 15675012262, -- Roblox_UI_Whoosh_04
+	Pop = 15675059323, -- Roblox_UI_Bright_Click
+}
+
+-- Looping background music, crossfaded by zone (Controllers/Music).
+AssetIds.Music = {
+	Lobby = 1836914203, -- Happy Thoughts (APM): surface, lobby and results
+	Topsoil = 1838661059, -- Magical Adventure (Light Vs) (APM)
+	Deep = 15675069601, -- Roblox_UI_Loop_Calm_Music: Bedrock
+	Hollows = 17422163655, -- Generic - Cloud Blitz: the deep stretch
 }
 
 -- Creator Store meshes. The game draws chunky part-built stand-ins until these
@@ -109,7 +124,7 @@ AssetIds.Gamepasses = {
 	AutoDig = 0,
 	BigPack = 0,
 	DrillSkins = 0,
-}
+} :: { [string]: number }
 
 function AssetIds.isSet(id: number): boolean
 	return typeof(id) == "number" and id > 0
@@ -123,7 +138,9 @@ function AssetIds.sound(id: number): string
 	return if AssetIds.isSet(id) then `rbxassetid://{id}` else ""
 end
 
---- Names of every unset slot, for the one-time startup warning.
+--- Unset audio slots (the only ones that leave the game worse: silent), for
+--- the one-time startup warning. Icons, panels, textures and meshes are
+--- optional overrides of code-built art and are not reported.
 function AssetIds.missing(): { string }
 	local out = {}
 	local function walk(tbl: { [string]: any }, prefix: string)
@@ -137,12 +154,8 @@ function AssetIds.missing(): { string }
 			end
 		end
 	end
-	walk(AssetIds.UI, "UI.")
-	walk(AssetIds.Icons, "Icons.")
-	walk(AssetIds.Textures, "Textures.")
 	walk(AssetIds.Sounds, "Sounds.")
-	walk(AssetIds.Meshes, "Meshes.")
-	walk(AssetIds.Gamepasses, "Gamepasses.")
+	walk(AssetIds.Music, "Music.")
 	table.sort(out)
 	return out
 end
