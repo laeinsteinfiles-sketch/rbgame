@@ -1,4 +1,5 @@
 .tools/
 sourcemap.json
 build/*.luau
+build/preview/
 __pycache__/
