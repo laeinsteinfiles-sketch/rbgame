@@ -25,6 +25,7 @@ ClientState.quests = { day = 0, progress = {} :: { [string]: number }, claimed =
 
 ClientState.settings = {
 	sfxVolume = 0.8,
+	musicVolume = 0.5,
 	shake = true,
 	autoDig = false,
 }
@@ -34,7 +35,8 @@ ClientState.onProfile = Signal.new() :: Signal.Signal<{ [string]: any }>
 ClientState.onQuests = Signal.new() :: Signal.Signal<()>
 ClientState.onNotify = Signal.new() :: Signal.Signal<string, string>
 ClientState.onSellResult = Signal.new() :: Signal.Signal<number, number>
-ClientState.onDigResult = Signal.new() :: Signal.Signal<number, boolean, Types.BlockRoll?, number>
+-- (index, accepted, roll, serverDepth, oreKept)
+ClientState.onDigResult = Signal.new() :: Signal.Signal<number, boolean, Types.BlockRoll?, number, boolean>
 ClientState.onResync = Signal.new() :: Signal.Signal<number>
 ClientState.onRoundResults = Signal.new() :: Signal.Signal<{ Types.Standing }, number, number>
 ClientState.onMegaEvent = Signal.new() :: Signal.Signal<string, number>
@@ -137,6 +139,15 @@ function ClientState.isTraveling(): boolean
 	return typeof(traveling) == "string" and traveling ~= ""
 end
 
+--- Seconds until the current elevator ride ends (0 when not riding).
+function ClientState.travelRemaining(): number
+	local endsAt = player:GetAttribute("TravelEndsAt")
+	if not ClientState.isTraveling() or typeof(endsAt) ~= "number" then
+		return 0
+	end
+	return math.max(0, endsAt - Workspace:GetServerTimeNow())
+end
+
 --- True while the character is at island height (not down the shaft).
 function ClientState.atSurface(): boolean
 	local character = player.Character
@@ -170,8 +181,8 @@ function ClientState.init()
 	Remotes.get("SellResult").OnClientEvent:Connect(function(total, count)
 		ClientState.onSellResult:Fire(total, count)
 	end)
-	Remotes.get("DigResult").OnClientEvent:Connect(function(index, accepted, roll, depth)
-		ClientState.onDigResult:Fire(index, accepted, roll, depth)
+	Remotes.get("DigResult").OnClientEvent:Connect(function(index, accepted, roll, depth, oreKept)
+		ClientState.onDigResult:Fire(index, accepted, roll, depth, oreKept == true)
 	end)
 	Remotes.get("Resync").OnClientEvent:Connect(function(depth)
 		ClientState.onResync:Fire(depth)

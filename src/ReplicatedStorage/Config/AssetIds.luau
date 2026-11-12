@@ -85,6 +85,16 @@ AssetIds.Sounds = {
 	ElevatorMove = 0, -- cable/motor whir
 	EggCrack = 0, -- crack + sparkle
 	CoreReached = 0, -- big resonant hit
+	Whoosh = 0, -- quick swoosh when a menu opens
+	Pop = 0, -- bubbly pop for reward popups
+}
+
+-- Looping background music, crossfaded by zone (Controllers/Music).
+AssetIds.Music = {
+	Lobby = 0, -- surface, lobby and results: upbeat
+	Topsoil = 0, -- light adventure
+	Deep = 0, -- Bedrock: mysterious caves
+	Hollows = 0, -- tense, epic underground
 }
 
 -- Creator Store meshes. The game draws chunky part-built stand-ins until these
@@ -141,6 +151,7 @@ function AssetIds.missing(): { string }
 	walk(AssetIds.Icons, "Icons.")
 	walk(AssetIds.Textures, "Textures.")
 	walk(AssetIds.Sounds, "Sounds.")
+	walk(AssetIds.Music, "Music.")
 	walk(AssetIds.Meshes, "Meshes.")
 	walk(AssetIds.Gamepasses, "Gamepasses.")
 	table.sort(out)
