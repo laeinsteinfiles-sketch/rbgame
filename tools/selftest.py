@@ -18,6 +18,7 @@ local Hash = require(node("ReplicatedStorage/Shared/Hash"))
 local Layers = require(node("ReplicatedStorage/Shared/Layers"))
 local Economy = require(node("ReplicatedStorage/Shared/Economy"))
 local OreGen = require(node("ReplicatedStorage/Shared/OreGen"))
+local Course = require(node("ReplicatedStorage/Shared/Course"))
 
 local failures = 0
 local function check(name, ok, detail)
@@ -45,9 +46,16 @@ check("hash differs by seed", Hash.u32(1, 1, 11) ~= Hash.u32(2, 1, 11))
 local mutSum = 0
 for _, m in GameConfig.Mutations do mutSum += m.chance end
 check("mutation chances sum to 1", math.abs(mutSum - 1) < 1e-9, tostring(mutSum))
-local oddsSum = 0
-for _, o in GameConfig.Pets.Odds do oddsSum += o.chance end
-check("pet odds sum to 100", oddsSum == 100, tostring(oddsSum))
+local oddsOk = true
+for _, egg in GameConfig.Eggs do
+    local sum = 0
+    for _, entry in egg.pets do sum += entry.chance end
+    if sum ~= 100 then oddsOk = false; print("  egg " .. egg.id .. " sums to " .. sum) end
+end
+check("every egg's odds sum to 100", oddsOk)
+local sizeSum = 0
+for _, size in GameConfig.PetSizes do sizeSum += size.chance end
+check("pet size odds sum to 100", sizeSum == 100, tostring(sizeSum))
 
 -- Ore odds per layer from the real generator
 for li = 1, Layers.count() do
@@ -72,6 +80,37 @@ check("catch-up caps at 15%", Economy.catchUpBonus(100000) == 0.15 and Economy.c
 check("upgrade cost chain", Economy.upgradeCost("drill", 1) == 50 and Economy.upgradeCost("drill", 7) == nil)
 check("ruby molten value", Economy.oreValue("ruby", "molten") == 4000)
 check("hardness ramps", Layers.hardnessAt(1) == 1 and Layers.hardnessAt(151) == 2.5 and Layers.hardnessAt(451) == 5)
+
+-- Course: same answer every time, special blocks never overlap, resolve is consistent
+local core = GameConfig.CoreDepth
+local seeds = { 11, 4242, 987654321, 2147483646 }
+local pocketBlocks, blastBlocks, chestBlocks, overlap, badResolve = 0, 0, 0, 0, 0
+for _, seed in seeds do
+    for i = 1, core - 1 do
+        local kind = Course.kind(seed, i)
+        if kind ~= Course.kind(seed, i) then overlap += 1 end
+        local flags = 0
+        if Course.isChest(i) then flags += 1; chestBlocks += 1 end
+        if Course.isBlast(seed, i) then flags += 1; blastBlocks += 1 end
+        if Course.isPocket(seed, i) then flags += 1; pocketBlocks += 1 end
+        if flags > 1 then overlap += 1 end
+        if kind ~= "pocket" then
+            local res = Course.resolve(seed, i)
+            if res.finalDepth < i or res.broken[1].index ~= i then badResolve += 1 end
+            if res.finalDepth + 1 < core and Course.kind(seed, res.finalDepth + 1) == "pocket" then badResolve += 1 end
+            for n, b in res.broken do
+                if b.index ~= i + n - 1 then badResolve += 1 end
+            end
+        end
+    end
+end
+check("course kinds never overlap", overlap == 0, tostring(overlap))
+check("course resolve is contiguous and lands on solid", badResolve == 0, tostring(badResolve))
+check("chests every 100 m", chestBlocks == #seeds * 10, tostring(chestBlocks))
+check("pockets exist but are rare", pocketBlocks > 20 and pocketBlocks < #seeds * core * 0.12, tostring(pocketBlocks))
+check("blasts exist but are rare", blastBlocks > 4 and blastBlocks < #seeds * core * 0.02, tostring(blastBlocks))
+check("no specials near the surface", Course.kind(42, 1) == "solid" and Course.kind(42, 10) == "solid")
+check("core seal is core", Course.kind(42, core) == "core")
 
 if failures > 0 then error(failures .. " check(s) failed") end
 print("all checks passed")
