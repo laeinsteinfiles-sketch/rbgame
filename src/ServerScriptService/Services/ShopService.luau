@@ -1,7 +1,7 @@
 --!strict
 -- Explorer: ServerScriptService/Services/ShopService (ModuleScript)
 -- SellAll and BuyUpgrade. Sale value is computed here from the server's own
--- backpack; the client only says "sell".
+-- backpack; the client only says "sell". Riding up sells automatically.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,16 +20,20 @@ local function notify(player: Player, kind: string, message: string)
 	Remotes.get("Notify"):FireClient(player, kind, message)
 end
 
-function ShopService.sell(player: Player)
+--- Sells the whole backpack. `arrival` = called by the elevator on reaching
+--- the surface, which already proves the player is home.
+function ShopService.sell(player: Player, arrival: boolean?)
 	local state = RoundState.get(player)
 	if not state or RoundState.phase ~= "Active" then
 		return
 	end
 	if state.packUsed <= 0 then
-		notify(player, "error", "Nothing to sell")
+		if not arrival then
+			notify(player, "error", "Nothing to sell")
+		end
 		return
 	end
-	if not PlotService.isNearSellPad(player) then
+	if not arrival and not PlotService.isNearSellPad(player) then
 		notify(player, "error", "Sell at your trading post")
 		return
 	end
@@ -78,7 +82,7 @@ local function buy(player: Player, kind: any)
 		name = GameConfig.Packs[state.packTier].name
 	end
 	RoundState.replicate(player)
-	notify(player, "buy", name)
+	notify(player, "buy", `{name} equipped`)
 end
 
 function ShopService.init()
@@ -96,16 +100,31 @@ function ShopService.init()
 		end
 	end)
 
-	-- The pad prompt is the same code path as the HUD button.
+	-- The pad prompt is the same code path as the HUD button. The workshop
+	-- prompt only opens UI, which each client handles locally.
 	for _, plot in PlotService.getAll() do
-		local prompt = plot.sellPad:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
-			prompt.Triggered:Connect(function(player)
-				if plot.owner == player and sellLimiter:allow(player) then
-					ShopService.sell(player)
-				end
-			end)
-		end
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "SellPrompt"
+		prompt.ActionText = "Sell ore"
+		prompt.ObjectText = "Trading post"
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = GameConfig.Geometry.SellRadius
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = plot.info.sellPad
+		prompt.Triggered:Connect(function(player)
+			if plot.owner == player and sellLimiter:allow(player) then
+				ShopService.sell(player)
+			end
+		end)
+		local workshop = Instance.new("ProximityPrompt")
+		workshop.Name = "WorkshopPrompt"
+		workshop.ActionText = "Upgrades"
+		workshop.ObjectText = "Workshop"
+		workshop.HoldDuration = 0
+		workshop.MaxActivationDistance = GameConfig.Geometry.SellRadius
+		workshop.RequiresLineOfSight = false
+		workshop:SetAttribute("OpensScreen", "Shop")
+		workshop.Parent = plot.info.workshopPad
 	end
 
 	Players.PlayerRemoving:Connect(function(player)
