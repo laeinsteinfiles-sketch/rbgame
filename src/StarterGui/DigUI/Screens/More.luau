@@ -32,6 +32,20 @@ function More.new(ctx: Base.Context): Modal.Handle
 		return panel
 	end
 
+	-- Changes apply at once (Main listens to onSettings) and are saved once
+	-- the player stops tapping, because SaveSettings is rate limited.
+	local saveQueued = false
+	local function changed()
+		state.onSettings:Fire()
+		if not saveQueued then
+			saveQueued = true
+			task.delay(1.5, function()
+				saveQueued = false
+				state.saveSettings()
+			end)
+		end
+	end
+
 	-- Sound
 	local sound = row("Sound volume", 1)
 	local volumeLabel = Label.new({ parent = sound, text = "", size = UDim2.new(0, 50, 1, 0), position = UDim2.new(1, -120, 0, 0), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Center, textSize = UITheme.TextSize.Body, display = true })
@@ -46,18 +60,13 @@ function More.new(ctx: Base.Context): Modal.Handle
 	end
 	local function setVolume(index: number)
 		state.settings.sfxVolume = VOLUME_STEPS[math.clamp(index, 1, #VOLUME_STEPS)]
-		ctx.sfx.setVolume(state.settings.sfxVolume)
-		volumeLabel.Text = tostring(math.floor(state.settings.sfxVolume * 100))
-		state.onSettings:Fire()
+		changed()
 	end
 	Button.new({ parent = sound, text = "-", size = UDim2.new(0, 48, 0, 40), position = UDim2.new(1, -176, 0.5, 0), anchor = Vector2.new(1, 0.5), sfx = sfx, onClick = function() setVolume(volumeIndex() - 1) end })
 	Button.new({ parent = sound, text = "+", size = UDim2.new(0, 48, 0, 40), position = UDim2.new(1, 0, 0.5, 0), anchor = Vector2.new(1, 0.5), sfx = sfx, onClick = function() setVolume(volumeIndex() + 1) end })
-	setVolume(volumeIndex())
-
 	-- Shake
 	local shake = row("Camera shake", 2)
-	local shakeButton: Button.Handle
-	shakeButton = Button.new({
+	local shakeButton = Button.new({
 		parent = shake,
 		text = "",
 		size = UDim2.new(0, 120, 0, 40),
@@ -66,30 +75,35 @@ function More.new(ctx: Base.Context): Modal.Handle
 		sfx = sfx,
 		onClick = function()
 			state.settings.shake = not state.settings.shake
-			ctx.fx.setShakeEnabled(state.settings.shake)
-			shakeButton.setText(if state.settings.shake then "On" else "Off")
-			shakeButton.setKind(if state.settings.shake then "primary" else "secondary")
+			changed()
 		end,
 	})
-	shakeButton.setText("On")
-	shakeButton.setKind("primary")
 
 	-- Auto-dig
 	local auto = row("Auto-dig (gamepass)", 3)
-	local autoButton: Button.Handle
-	autoButton = Button.new({
+	local autoButton = Button.new({
 		parent = auto,
-		text = "Off",
+		text = "",
 		size = UDim2.new(0, 120, 0, 40),
 		position = UDim2.new(1, 0, 0.5, 0),
 		anchor = Vector2.new(1, 0.5),
 		sfx = sfx,
 		onClick = function()
 			state.settings.autoDig = not state.settings.autoDig
-			autoButton.setText(if state.settings.autoDig then "On" else "Off")
-			autoButton.setKind(if state.settings.autoDig then "primary" else "secondary")
+			changed()
 		end,
 	})
+
+	-- Mirrors the saved settings on join and every local change.
+	local function sync()
+		volumeLabel.Text = tostring(math.floor(state.settings.sfxVolume * 100))
+		shakeButton.setText(if state.settings.shake then "On" else "Off")
+		shakeButton.setKind(if state.settings.shake then "primary" else "secondary")
+		autoButton.setText(if state.settings.autoDig then "On" else "Off")
+		autoButton.setKind(if state.settings.autoDig then "primary" else "secondary")
+	end
+	state.onSettings:Connect(sync)
+	sync()
 	state.onAttr("Passes", function()
 		autoButton.setEnabled(state.ownsPass("AutoDig"))
 	end)
