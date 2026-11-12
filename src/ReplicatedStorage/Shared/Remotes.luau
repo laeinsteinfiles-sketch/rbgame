@@ -11,6 +11,7 @@ local Remotes = {}
 -- client -> server (intent only, never numbers the server already owns)
 Remotes.ClientToServer = {
 	"DigRequest", -- (blockIndex)
+	"DigHold", -- (isHolding) cosmetic: drives the drill spin other players see
 	"SellAll", -- ()
 	"BuyUpgrade", -- ("drill" | "pack")
 	"ClaimQuest", -- (questId)
