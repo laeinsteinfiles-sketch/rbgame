@@ -46,7 +46,7 @@ local function startingPackTier(player: Player): number
 end
 
 local function resetPlayer(player: Player, ontoShaft: boolean)
-	RoundState.reset(player, startingPackTier(player))
+	RoundState.reset(player, startingPackTier(player), not ontoShaft)
 	if ontoShaft then
 		-- Everyone starts the race standing on their first block.
 		local character = player.Character
@@ -132,16 +132,28 @@ end
 -- Results --------------------------------------------------------------------
 
 local function finishRound()
-	local entries: { { player: Player, depth: number, dug: number } } = {}
+	-- Only players who actually dug this round place, win or earn gems, so
+	-- idling in a server is never rewarded.
+	local entries: { { player: Player, depth: number, reachedAt: number, core: boolean } } = {}
 	for player, state in RoundState.all() do
-		table.insert(entries, { player = player, depth = state.depth, dug = state.dugThisRound })
+		if state.dugThisRound > 0 then
+			table.insert(entries, {
+				player = player,
+				depth = state.depth,
+				reachedAt = state.depthReachedAt,
+				core = player == coreWinner,
+			})
+		end
 	end
 	table.sort(entries, function(a, b)
+		if a.core ~= b.core then
+			return a.core
+		end
 		if a.depth ~= b.depth then
 			return a.depth > b.depth
 		end
-		if a.dug ~= b.dug then
-			return a.dug > b.dug
+		if a.reachedAt ~= b.reachedAt then
+			return a.reachedAt < b.reachedAt -- got there first
 		end
 		return a.player.Name < b.player.Name
 	end)
@@ -157,8 +169,11 @@ local function finishRound()
 			end
 		end
 		QuestService.add(entry.player, "rounds", 1)
-		local base = R.Gems.Placement[placement]
-			or (R.Gems.Participation + math.min(R.Gems.DepthGemCap, entry.depth // R.Gems.DepthPerGem))
+		-- Everyone who dug earns participation + depth; the podium adds a bonus
+		-- on top, so a deep 4th place never out-earns 3rd.
+		local base = R.Gems.Participation
+			+ math.min(R.Gems.DepthGemCap, entry.depth // R.Gems.DepthPerGem)
+			+ (R.Gems.Placement[placement] or 0)
 		local reason = if placement <= 3 then `Finished #{placement}` else "Round complete"
 		-- awardGems pushes the profile, which also carries the stats above.
 		gemsFor[entry.player] = MetaService.awardGems(entry.player, base, reason)
@@ -176,8 +191,13 @@ local function finishRound()
 	set("WinnerUserId", if winner then winner.player.UserId else 0)
 	set("WinnerByCore", coreWinner ~= nil)
 
+	-- Everyone sees the sheet; non-diggers get placement 0 ("didn't dig").
+	local placementOf: { [Player]: number } = {}
 	for placement, entry in entries do
-		Remotes.get("RoundResults"):FireClient(entry.player, standings, placement, gemsFor[entry.player] or 0)
+		placementOf[entry.player] = placement
+	end
+	for _, player in Players:GetPlayers() do
+		Remotes.get("RoundResults"):FireClient(player, standings, placementOf[player] or 0, gemsFor[player] or 0)
 	end
 end
 
@@ -191,8 +211,10 @@ end
 
 local function runRound()
 	roundNumber += 1
+	RoundState.roundNumber = roundNumber
 	set("RoundNumber", roundNumber)
 	coreWinner = nil
+	RoundState.clearParked()
 
 	setPhase("Lobby", R.LobbySeconds)
 	resetAll(false)
@@ -209,7 +231,7 @@ local function runRound()
 	end
 	local endAt = os.clock() + R.ActiveSeconds
 	while os.clock() < endAt and not coreWinner do
-		task.wait(0.25)
+		task.wait(0.1)
 	end
 	if RoundState.megaActive then
 		endMega(folder:GetAttribute("MegaIndex") :: number, round)
@@ -234,11 +256,26 @@ function RoundService.init()
 	set("WinnerByCore", false)
 	folder.Parent = ReplicatedStorage
 
-	Players.PlayerAdded:Connect(function(player)
-		resetPlayer(player, false)
-	end)
+	local function onCharacter(player: Player)
+		-- PlotService puts every new character at home, which is the surface.
+		local state = RoundState.get(player)
+		if state then
+			state.atSurface = true
+			state.holding = false
+		end
+	end
+	local function onJoin(player: Player)
+		-- A player who dropped mid-race gets their shaft back.
+		if not (RoundState.phase == "Active" and RoundState.restore(player)) then
+			resetPlayer(player, false)
+		end
+		player.CharacterAdded:Connect(function()
+			onCharacter(player)
+		end)
+	end
+	Players.PlayerAdded:Connect(onJoin)
 	for _, player in Players:GetPlayers() do
-		resetPlayer(player, false)
+		onJoin(player)
 	end
 
 	-- Pass ownership arrives after the profile; a fresh BigPack owner who has
@@ -271,7 +308,14 @@ function RoundService.init()
 	end)
 	task.spawn(function()
 		while true do
-			runRound()
+			-- One bad round must never freeze the server's phase forever.
+			local ok, err = pcall(runRound)
+			if not ok then
+				warn(`[RoundService] round {roundNumber} failed: {err}`)
+				RoundState.megaActive = false
+				set("MegaActive", false)
+				task.wait(1)
+			end
 		end
 	end)
 end
