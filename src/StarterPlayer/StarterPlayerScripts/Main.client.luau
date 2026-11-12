@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AssetIds = require(ReplicatedStorage.Config.AssetIds)
 local Controllers = script.Parent.Controllers
 
+local CameraRig = require(Controllers.CameraRig)
 local ClientState = require(Controllers.ClientState)
 local DigController = require(Controllers.DigController)
 local DrillRig = require(Controllers.DrillRig)
@@ -24,6 +25,7 @@ LayerFX.init()
 ShaftRenderer.init()
 DigController.init()
 DrillRig.init()
+CameraRig.init()
 
 -- The shaft follows the assigned plot; PlotIndex arrives right after join.
 ClientState.onAttr("PlotIndex", function(index)
