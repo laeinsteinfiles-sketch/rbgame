@@ -25,6 +25,9 @@ local POOL: { QuestDef } = {
 	{ id = "rounds_2", kind = "rounds", goal = 2, reward = 25, title = "Finish 2 rounds" },
 	{ id = "mutation_1", kind = "mutation", goal = 1, reward = 20, title = "Find a mutated ore" },
 	{ id = "mega_60", kind = "mega", goal = 60, reward = 25, title = "Dig 60 blocks during Mega Drills" },
+	{ id = "chest_3", kind = "chest", goal = 3, reward = 20, title = "Open 3 treasure chests" },
+	{ id = "blast_2", kind = "blast", goal = 2, reward = 25, title = "Set off 2 blast charges" },
+	{ id = "pocket_20", kind = "pocket", goal = 20, reward = 20, title = "Free-fall 20 m through pockets" },
 }
 
 local byId: { [string]: QuestDef } = {}
