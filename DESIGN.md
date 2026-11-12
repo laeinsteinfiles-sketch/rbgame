@@ -47,16 +47,31 @@ README). Everything else in `GameConfig` is a first guess.
 - The server owns every number. Clients send `DigRequest(index)` and the
   server checks: rate limit → integer → phase Active → `index == depth + 1`
   → not mid-elevator → character within 6 blocks of the expected height and
-  inside the shaft footprint → elapsed ≥ `hardness / power + 0.18 s` with a
-  12% (min 80 ms) tolerance, judged against the kinder of current and
-  previous power so Mega Drill edges and upgrades never reject honest digs.
-- Drop time is part of the minimum interval. A client that skips the physics
-  fall gains nothing.
-- Out-of-order indices are not violations (an honest client keeps predicting
-  after a rejection); malformed args, position and timing failures are. 25
-  violations → kick.
-- Sell requires proximity to the player's own pad; value is computed from
-  the server's backpack.
+  inside the shaft footprint → timing.
+- Timing uses a small time bank: each accepted dig costs
+  `hardness / power + DropTime` seconds, judged against the kinder of current
+  and previous power, and real elapsed time refills the bank up to
+  `Dig.TimeBankSeconds` (0.75 s). Two requests bunched by lag pass; sustained
+  over-speed does not, and skipping the fall gains at most the bank once.
+  Only a gap under half the required time counts as a violation; other
+  timing misses are rejected and resynced without penalty.
+- A missing or dead character (respawn, death mid-dig) is a plain reject, not
+  a violation. Out-of-order indices are not violations either (an honest
+  client keeps predicting after a rejection); malformed args and positions
+  far from the shaft are. 25 violations → kick.
+- Selling needs the server to have seen the player reach the surface (an up
+  ride, a respawn or the lobby reset) and proximity to their own pad, so a
+  teleport exploit cannot skip the ride. Arriving at the top by elevator
+  sells automatically; the pad and the HUD button cover respawns.
+- A player who disconnects mid-round gets their exact state (depth, seed,
+  cash, pack) back if they rejoin before the round ends.
+- Only players who dug at least one block place, win, earn gems or count a
+  finished round. Payout = participation 10 + 1 per 50 m (cap 30) + podium
+  bonus 60/40/25, so a deep 4th never out-earns 3rd and idling earns nothing.
+  Ties break on who reached the depth first; the core winner always places 1st.
+- `SafetyService` returns characters that leave the playable space (map edge,
+  void, or through a shaft whose local blocks failed) to where the server
+  thinks they are, never to a more convenient place.
 - Meta perks: dig speed +2%/level, max 5 (+10%); pack +1 slot/level, max 5.
   Pets add gems only. Skins are cosmetic. The BigPack pass starts you on the
   tier-2 pack (one fewer early trip), which is the most "advantage" any
@@ -79,38 +94,67 @@ purchases { skins, pets { [id] = count }, claimedCollection, equippedSkin, equip
 `MIGRATIONS[n]` upgrades n → n+1; `Reconcile()` fills new keys. Round state
 is never written.
 
-## Art direction as implemented
+## Look and feel
 
-- Palette: panel #23272E with #3B424D 2 px outline, amber #F2B33D for
-  rewards/cash/winners, teal #3FB6A8 for positive actions/progress/gems,
-  text #F1EFE8 / #A3A7AE. One warn colour (#C9655C) for "can't afford" and
-  "pack full" only.
-- Nunito SemiBold (body) and ExtraBold (numbers, titles). Radius 10 px.
-- Layers: Topsoil dusty brown, Bedrock slate, Hollows desaturated
-  violet-grey. Each has its own Ambient/OutdoorAmbient/Fog, Atmosphere
-  density/haze/colour and ColorCorrection saturation/contrast/tint, tweened
-  over 1.2 s (Sine) with a 0.35-stud shake.
-- Saturation only on ore, mutations (Glass/Neon + light), relics (amber),
-  the core, and the sell pad.
-- UI is code-built from eight components; no screen owns a one-off frame
-  style. Panels switch to the 9-slice sprite the moment the id is set.
+The first build used a muted charcoal palette with Nunito and hidden icons;
+it read as generic. The current look copies what the top Roblox dig games
+(Dig to Earth's CORE!, Dig to Escape, Mining Simulator 2, Dig it!) actually
+ship, measured from their screenshots:
+
+- **Plates.** Charcoal windows (#303036 → #222226) with a 4 px near-black
+  outline; saturated glossy plates (lime, sky, periwinkle, coral, amber,
+  purple, orange) with a white shine strip and a darker 5 px 3D lip that the
+  face sinks into on press. Hover grows, click pops (Back-out).
+- **Type.** Fredoka One everywhere in caps on buttons and titles, white with
+  a black outline at ~12% of the text size; Luckiest Guy only for big
+  banners (countdown, round over, core reached). `UITheme` owns every colour.
+- **Icons.** Every control has one: coins, gems and ores are drawn from
+  frames; everything else is a colour emoji. Uploaded icons can override.
+- **HUD.** Left: cash/gem/relic pills and a 2-wide grid of menu tiles with
+  red badges (claimable quests, collection rewards, affordable upgrades, an
+  affordable egg). Top centre: round timer that turns red in the last minute.
+  Right: the race tracker, a layer-coloured surface-to-core track with every
+  player's avatar at their depth and the top-5 standings. Bottom centre:
+  depth + layer chip, backpack bar (orange near full, red and pulsing when
+  full) and exactly one context action (SELL $n / SURFACE in the shaft, SELL
+  or DIG n m at the top, elevator countdown while riding). Touch adds a big
+  round DIG button left of the jump button.
+- **Guidance.** A hint pill always says the next step (walk into your hole,
+  hold to dig, backpack full, go sell, you can afford an upgrade, ride back
+  down), with a glowing guide line to the hole or sell pad when walking is
+  the next step.
+- **Menus.** Tilted title chip over the top-left corner, tilted red X, Back-
+  out open. Upgrades show tier pips, the next tier's gain and what's
+  missing ("NEED $120 MORE"). The Ore Index shows "???" until an ore is
+  found and a discovery meter. The Gem Shop hatches eggs in ~3 s (wobble,
+  crack, pop to the pet in its rarity colour).
+- **Big moments.** 3-2-1-DIG! countdown, layer title cards, rare/new-ore and
+  relic banners in rarity colours, the Mega Drill banner with its shared
+  goal bar, coins that fly into the cash pill on a sale, a full-screen
+  flash and confetti at the core, and a podium results sheet with avatars.
+- **Audio.** 25 verified public sound effects and 4 music tracks that
+  crossfade by zone (surface, Topsoil, Bedrock, The Hollows); see ASSETS.md.
 
 ## Juice checklist
 
-Ore pop (Back-out rise, Quad-in whip to camera), dust puff in layer colour,
-floating "+$n", rare sting + particle burst + 0.12 shake on rarity ≥ 3 or
-any mutation, cash count-up (Quad-out, coin ticks) with panel punch, layer
-transition + shake + whoosh, countdown punches, Mega banner Back-out slide,
-results sheet Back-out, button tap punch + sound, elevator sound, four dig
-ticks per block (low thud + high tick = the "haptic" layer).
+Block break: dust puff plus debris chunks in the layer colour, four dig
+ticks per block (low thud + high tick). Ore: gem pops out with a sparkle
+burst and flies at the camera, floating "+$n" in rarity colour; rare finds
+add a banner, light flash and small shake. Sell: register sound, coin
+burst into the cash pill, count-up with rising ticks, pill punch. Layer
+change: lighting tween, whoosh, title card. Plus countdown punches, Mega
+banner slide, egg hatch, button press/hover, elevator whir and the core
+celebration.
 
 ## Deliberately not built
 
-Forge, boss, cave-ins: not designed in the brief, so not guessed at. The
-round loop, pets, skins, quests, collection, meta shop, gamepass hooks and
-credits are all in.
+Forge, boss, cave-ins: not designed in the brief, so not guessed at. Daily
+login calendar, gift timer and codes (common in the hits) are left for a
+later pass; they need their own persistence and copy. The round loop, pets,
+skins, quests, collection, meta shop, gamepass hooks and credits are all in.
 
 ## Known placeholders
 
-Everything in `AssetIds` at 0 (see ASSETS.md). Part-built drill, pets and
-ore nuggets. Layer textures pending the 204-material list.
+Gamepass ids are 0 until the passes exist in the Creator Dashboard (their
+buttons say SOON). Icons, panels, layer textures and meshes are code-built
+on purpose; uploaded art can replace any of them through `AssetIds`.
