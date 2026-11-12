@@ -25,6 +25,7 @@ export type PlayerRound = {
 	seed: number,
 	lastDigAt: number,
 	lastPower: number,
+	digBank: number, -- seconds of dig time banked against network bunching
 	violations: number,
 	catchUp: number,
 	dugThisRound: number,
@@ -33,13 +34,21 @@ export type PlayerRound = {
 	travelingUntil: number,
 	lastTravelAt: number,
 	reachedCore: boolean,
+	depthReachedAt: number, -- os.clock() when the current depth was reached (tiebreak)
+	atSurface: boolean, -- server-tracked: rode up, spawned or reset at the surface
+	holding: boolean, -- the client says the dig input is held (cosmetic only)
+	round: number, -- round number this state belongs to
 }
 
 RoundState.phase = "Lobby" :: "Lobby" | "Countdown" | "Active" | "Results"
 RoundState.megaActive = false
+RoundState.roundNumber = 0
 
 local rng = Random.new()
 local states: { [Player]: PlayerRound } = {}
+-- Active-round states of players who disconnected, restored if they rejoin
+-- before the round ends so a dropped connection doesn't forfeit the race.
+local parked: { [number]: PlayerRound } = {}
 
 function RoundState.get(player: Player): PlayerRound?
 	return states[player]
@@ -88,6 +97,7 @@ function RoundState.replicate(player: Player)
 	player:SetAttribute("DigPower", RoundState.power(player))
 	player:SetAttribute("CatchUp", state.catchUp)
 	player:SetAttribute("Seed", state.seed)
+	player:SetAttribute("ReachedCore", state.reachedCore)
 end
 
 function RoundState.syncBackpack(player: Player)
@@ -97,7 +107,7 @@ function RoundState.syncBackpack(player: Player)
 	end
 end
 
-function RoundState.reset(player: Player, startingPackTier: number)
+function RoundState.reset(player: Player, startingPackTier: number, atSurface: boolean)
 	states[player] = {
 		depth = 0,
 		cash = 0,
@@ -108,6 +118,7 @@ function RoundState.reset(player: Player, startingPackTier: number)
 		seed = rng:NextInteger(1, 2 ^ 31 - 1),
 		lastDigAt = 0,
 		lastPower = 0,
+		digBank = GameConfig.Dig.TimeBankSeconds,
 		violations = 0,
 		catchUp = 0,
 		dugThisRound = 0,
@@ -116,25 +127,60 @@ function RoundState.reset(player: Player, startingPackTier: number)
 		travelingUntil = 0,
 		lastTravelAt = 0,
 		reachedCore = false,
+		depthReachedAt = 0,
+		atSurface = atSurface,
+		holding = false,
+		round = RoundState.roundNumber,
 	}
+	player:SetAttribute("Traveling", "")
 	RoundState.replicate(player)
 	RoundState.syncBackpack(player)
 	Remotes.get("Resync"):FireClient(player, 0)
 end
 
+--- Gives a rejoining player back the state they left this round with.
+--- Returns false when there is nothing to restore.
+function RoundState.restore(player: Player): boolean
+	local state = parked[player.UserId]
+	parked[player.UserId] = nil
+	if not state or state.round ~= RoundState.roundNumber then
+		return false
+	end
+	state.travelingUntil = 0
+	state.lastDigAt = 0
+	state.digBank = GameConfig.Dig.TimeBankSeconds
+	state.atSurface = true -- they respawn at home
+	state.holding = false
+	states[player] = state
+	player:SetAttribute("Traveling", "")
+	RoundState.replicate(player)
+	RoundState.syncBackpack(player)
+	Remotes.get("Resync"):FireClient(player, state.depth)
+	return true
+end
+
+function RoundState.clearParked()
+	table.clear(parked)
+end
+
 function RoundState.init()
 	Players.PlayerRemoving:Connect(function(player)
+		local state = states[player]
+		if state and RoundState.phase == "Active" and state.dugThisRound > 0 then
+			parked[player.UserId] = state
+		end
 		states[player] = nil
 	end)
 
-	-- IsDigging drives drill animation on every client; 0.7 s covers the
-	-- slowest legit cadence without flickering.
+	-- IsDigging drives the drill spin every client draws for this player.
+	-- The client reports holding; the recent-dig window covers a dropped packet.
 	task.spawn(function()
 		while true do
-			task.wait(0.25)
+			task.wait(0.2)
 			local now = os.clock()
+			local active = RoundState.phase == "Active"
 			for player, state in states do
-				local digging = now - state.lastDigAt < 0.7
+				local digging = active and state.travelingUntil <= now and (state.holding or now - state.lastDigAt < 0.7)
 				if player:GetAttribute("IsDigging") ~= digging then
 					player:SetAttribute("IsDigging", digging)
 				end
