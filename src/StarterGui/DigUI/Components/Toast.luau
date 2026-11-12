@@ -1,15 +1,14 @@
 --!strict
 -- Explorer: StarterGui/DigUI/Components/Toast (ModuleScript)
--- Short notifications stacked under the round timer. One line each, never a
--- wall of text; the kind picks the accent colour of the outline.
+-- Short notifications that pop in under the round timer: a coloured pill with
+-- an icon and one outlined line of text. The kind picks colour and icon.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local UITheme = require(ReplicatedStorage.Config.UITheme)
 local Base = require(script.Parent.Base)
-local Label = require(script.Parent.Label)
-local Panel = require(script.Parent.Panel)
+local Icon = require(script.Parent.Icon)
 
 local Toast = {}
 
@@ -17,73 +16,92 @@ export type Handle = {
 	show: (kind: string, text: string) -> (),
 }
 
-local ACCENT: { [string]: Color3 } = {
-	error = UITheme.Colors.Warn,
-	packfull = UITheme.Colors.Warn,
-	gems = UITheme.Colors.Teal,
-	buy = UITheme.Colors.Teal,
-	relic = UITheme.Colors.Amber,
-	layer = UITheme.Colors.Amber,
-	info = UITheme.Colors.PanelOutline,
+local STYLE: { [string]: { swatch: string, icon: string } } = {
+	error = { swatch = "red", icon = "Warning" },
+	packfull = { swatch = "red", icon = "Backpack" },
+	gems = { swatch = "purple", icon = "Gem" },
+	buy = { swatch = "green", icon = "Check" },
+	relic = { swatch = "gold", icon = "Relic" },
+	layer = { swatch = "orange", icon = "Depth" },
+	sell = { swatch = "gold", icon = "Cash" },
+	quest = { swatch = "orange", icon = "Quest" },
+	info = { swatch = "blue", icon = "Info" },
 }
 
-local LIFETIME = 2.4
+local LIFETIME = 2.6
+local MAX_SHOWN = 3
 
 function Toast.new(parent: Instance): Handle
-	local stack = Base.frame(parent, "Toasts", UDim2.new(0, 360, 0, 200), UDim2.new(0.5, 0, 0, 92), Vector2.new(0.5, 0))
-	Base.sizeConstraint(stack, nil, Vector2.new(360, 200))
-	Base.list(stack, Enum.FillDirection.Vertical, UITheme.Gap, Enum.HorizontalAlignment.Center)
+	local stack = Base.frame(parent, "Toasts", UDim2.new(0, 520, 0, 200), UDim2.new(0.5, 0, 0, 138), Vector2.new(0.5, 0))
+	Base.list(stack, Enum.FillDirection.Vertical, 8, Enum.HorizontalAlignment.Center)
+	local order = 0
 
 	local function show(kind: string, text: string)
-		local panel = Panel.new({
-			parent = stack,
-			name = "Toast",
-			size = UDim2.new(1, 0, 0, 40),
-			padding = 0,
-		})
-		local stroke = panel:FindFirstChildOfClass("UIStroke")
-		if stroke then
-			stroke.Color = ACCENT[kind] or ACCENT.info
-		end
-		local label = Label.new({
-			parent = panel,
-			text = text,
-			size = UDim2.fromScale(1, 1),
-			align = Enum.TextXAlignment.Center,
-			textSize = UITheme.TextSize.Body,
-			color = if kind == "error" or kind == "packfull" then UITheme.Colors.Warn else UITheme.Colors.Text,
-			truncate = true,
-		})
-		label.LayoutOrder = 0
-		panel.LayoutOrder = os.clock() * 1000 // 1
-		panel.BackgroundTransparency = 1
-		label.TextTransparency = 1
-		TweenService:Create(panel, UITheme.Easing.Slide, { BackgroundTransparency = 0 }):Play()
-		TweenService:Create(label, UITheme.Easing.Slide, { TextTransparency = 0 }):Play()
+		local style = STYLE[kind] or STYLE.info
+		local swatch = UITheme.swatch(style.swatch)
+		order += 1
+
+		local group = Instance.new("CanvasGroup")
+		group.Name = "Toast"
+		group.BackgroundColor3 = Color3.new(1, 1, 1)
+		group.BorderSizePixel = 0
+		group.AutomaticSize = Enum.AutomaticSize.X
+		group.Size = UDim2.fromOffset(0, 46)
+		group.LayoutOrder = order
+		Base.round(group)
+		Base.stroke(group, UITheme.Colors.Ink, 3)
+		Base.gradient(group, swatch.top, swatch.bottom)
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft = UDim.new(0, 10)
+		pad.PaddingRight = UDim.new(0, 18)
+		pad.Parent = group
+		Base.list(group, Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center)
+		Icon.new({ parent = group, name = style.icon, size = UDim2.fromOffset(32, 32), layoutOrder = 1 })
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.Size = UDim2.new(0, 0, 1, 0)
+		label.FontFace = UITheme.Font.Display
+		label.TextSize = 22
+		label.TextColor3 = UITheme.Colors.White
+		label.Text = text
+		label.LayoutOrder = 2
+		Base.textStroke(label)
+		label.Parent = group
+		local scale = Instance.new("UIScale")
+		scale.Scale = 0.3
+		scale.Parent = group
+		group.GroupTransparency = 1
+		group.Parent = stack
+
+		TweenService:Create(scale, UITheme.Easing.Pop, { Scale = 1 }):Play()
+		TweenService:Create(group, UITheme.Easing.Settle, { GroupTransparency = 0 }):Play()
 		task.delay(LIFETIME, function()
-			local fade = TweenService:Create(label, UITheme.Easing.SlideOut, { TextTransparency = 1 })
-			TweenService:Create(panel, UITheme.Easing.SlideOut, { BackgroundTransparency = 1 }):Play()
-			if stroke then
-				TweenService:Create(stroke, UITheme.Easing.SlideOut, { Transparency = 1 }):Play()
+			if not group.Parent then
+				return
 			end
+			local fade = TweenService:Create(group, UITheme.Easing.SlideOut, { GroupTransparency = 1 })
+			TweenService:Create(scale, UITheme.Easing.SlideOut, { Scale = 0.8 }):Play()
 			fade:Play()
 			fade.Completed:Connect(function()
-				panel:Destroy()
+				group:Destroy()
 			end)
 		end)
-		-- Keep at most four on screen; the oldest goes first.
-		local children = stack:GetChildren()
-		local panels = {}
-		for _, child in children do
-			if child:IsA("GuiObject") then
-				table.insert(panels, child)
+
+		-- Keep the newest few; the oldest goes first.
+		local live = {}
+		for _, child in stack:GetChildren() do
+			if child:IsA("CanvasGroup") then
+				table.insert(live, child)
 			end
 		end
-		if #panels > 4 then
-			table.sort(panels, function(a, b)
+		if #live > MAX_SHOWN then
+			table.sort(live, function(a, b)
 				return a.LayoutOrder < b.LayoutOrder
 			end)
-			panels[1]:Destroy()
+			for i = 1, #live - MAX_SHOWN do
+				live[i]:Destroy()
+			end
 		end
 	end
 
