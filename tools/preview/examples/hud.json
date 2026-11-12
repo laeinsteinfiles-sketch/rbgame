@@ -1,0 +1,2848 @@
+{
+ "root": {
+  "class": "ScreenGui",
+  "name": "DigUI",
+  "ignoreGuiInset": false,
+  "screenInsets": "CoreUISafeInsets",
+  "children": [
+   {
+    "class": "Frame",
+    "name": "Depth",
+    "size": [
+     0.22,
+     0,
+     0,
+     100
+    ],
+    "position": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     0,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 0.06,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.2314,
+       0.2588,
+       0.302
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       10
+      ],
+      "bottom": [
+       0,
+       10
+      ],
+      "left": [
+       0,
+       10
+      ],
+      "right": [
+       0,
+       10
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "ImageLabel",
+      "name": "DepthIcon",
+      "size": [
+       0,
+       20,
+       0,
+       20
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "image": "rbxassetid://icon",
+      "imageColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "imageTransparency": 0,
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         4
+        ]
+       }
+      ],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "DepthTitle",
+      "size": [
+       1,
+       -26,
+       0,
+       18
+      ],
+      "position": [
+       0,
+       26,
+       0,
+       1
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "DEPTH",
+      "textSize": 14,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "DepthValue",
+      "size": [
+       1,
+       0,
+       0,
+       40
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       18
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "412 m",
+      "textSize": 36,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.9451,
+       0.9373,
+       0.9098
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "Layer",
+      "size": [
+       1,
+       0,
+       0,
+       16
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       58
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "Layer 3 - Magma Rock",
+      "textSize": 14,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 600,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "Frame",
+      "name": "LayerBar",
+      "size": [
+       1,
+       0,
+       0,
+       6
+      ],
+      "position": [
+       0,
+       0,
+       1,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       1
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0.5,
+         0
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "Frame",
+        "name": "Fill",
+        "size": [
+         0.62,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.2471,
+         0.7137,
+         0.6588
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0.5,
+           0
+          ]
+         }
+        ],
+        "children": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "class": "TextLabel",
+    "name": "CatchUp",
+    "size": [
+     0,
+     0,
+     0,
+     32
+    ],
+    "position": [
+     0,
+     12,
+     0,
+     120
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     0,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.2471,
+     0.7137,
+     0.6588
+    ],
+    "backgroundTransparency": 0,
+    "clipsDescendants": false,
+    "automaticSize": "X",
+    "text": "Catch-up +8% dig speed",
+    "textSize": 15,
+    "textScaled": false,
+    "textWrapped": false,
+    "textColor3": [
+     0.1059,
+     0.1176,
+     0.1412
+    ],
+    "textTransparency": 0,
+    "textXAlignment": "Left",
+    "textYAlignment": "Center",
+    "fontFamily": "rbxasset://fonts/families/Nunito.json",
+    "fontWeight": 800,
+    "textStrokeColor3": [
+     0,
+     0,
+     0
+    ],
+    "textStrokeTransparency": 1,
+    "textTruncate": "AtEnd",
+    "richText": false,
+    "lineHeight": 1,
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       0
+      ],
+      "bottom": [
+       0,
+       0
+      ],
+      "left": [
+       0,
+       12
+      ],
+      "right": [
+       0,
+       12
+      ]
+     }
+    ],
+    "children": []
+   },
+   {
+    "class": "Frame",
+    "name": "Timer",
+    "size": [
+     0,
+     200,
+     0,
+     56
+    ],
+    "position": [
+     0.5,
+     0,
+     0,
+     12
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     0.5,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 0.06,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.2314,
+       0.2588,
+       0.302
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       10
+      ],
+      "bottom": [
+       0,
+       10
+      ],
+      "left": [
+       0,
+       10
+      ],
+      "right": [
+       0,
+       10
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "TextLabel",
+      "name": "Phase",
+      "size": [
+       1,
+       0,
+       0,
+       14
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "MEGA DRILL IN 1:28",
+      "textSize": 12,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Center",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "Time",
+      "size": [
+       1,
+       0,
+       0,
+       26
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       14
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "14:32",
+      "textSize": 26,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.9451,
+       0.9373,
+       0.9098
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Center",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     }
+    ]
+   },
+   {
+    "class": "Frame",
+    "name": "Cash",
+    "size": [
+     0.22,
+     0,
+     0,
+     56
+    ],
+    "position": [
+     1,
+     -12,
+     0,
+     12
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     1,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 0.06,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.2314,
+       0.2588,
+       0.302
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       10
+      ],
+      "bottom": [
+       0,
+       10
+      ],
+      "left": [
+       0,
+       10
+      ],
+      "right": [
+       0,
+       10
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "ImageLabel",
+      "name": "CashIcon",
+      "size": [
+       0,
+       28,
+       0,
+       28
+      ],
+      "position": [
+       0,
+       0,
+       0.5,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0.5
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "image": "rbxassetid://icon",
+      "imageColor3": [
+       0.949,
+       0.702,
+       0.2392
+      ],
+      "imageTransparency": 0,
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         4
+        ]
+       }
+      ],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "CashValue",
+      "size": [
+       1,
+       -36,
+       1,
+       0
+      ],
+      "position": [
+       0,
+       36,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "$12,480",
+      "textSize": 28,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.949,
+       0.702,
+       0.2392
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     }
+    ]
+   },
+   {
+    "class": "Frame",
+    "name": "Gems",
+    "size": [
+     0.22,
+     0,
+     0,
+     36
+    ],
+    "position": [
+     1,
+     -12,
+     0,
+     76
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     1,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 0.06,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.2314,
+       0.2588,
+       0.302
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       10
+      ],
+      "bottom": [
+       0,
+       10
+      ],
+      "left": [
+       0,
+       10
+      ],
+      "right": [
+       0,
+       10
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "ImageLabel",
+      "name": "GemIcon",
+      "size": [
+       0,
+       18,
+       0,
+       18
+      ],
+      "position": [
+       0,
+       0,
+       0.5,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0.5
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "image": "rbxassetid://icon",
+      "imageColor3": [
+       0.2471,
+       0.7137,
+       0.6588
+      ],
+      "imageTransparency": 0,
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         4
+        ]
+       }
+      ],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "GemsValue",
+      "size": [
+       0.6,
+       0,
+       1,
+       0
+      ],
+      "position": [
+       0,
+       26,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "128 gems",
+      "textSize": 16,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.2471,
+       0.7137,
+       0.6588
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "Relics",
+      "size": [
+       0.4,
+       0,
+       1,
+       0
+      ],
+      "position": [
+       1,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       1,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "3 relics",
+      "textSize": 14,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Right",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 700,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     }
+    ]
+   },
+   {
+    "class": "Frame",
+    "name": "Toast",
+    "size": [
+     0,
+     380,
+     0,
+     44
+    ],
+    "position": [
+     0.5,
+     0,
+     0,
+     84
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     0.5,
+     0
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     1,
+     1,
+     1
+    ],
+    "backgroundTransparency": 0,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0.5,
+       0
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.949,
+       0.702,
+       0.2392
+      ],
+      "transparency": 0.2,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIGradient",
+      "rotation": 0,
+      "offset": [
+       0,
+       0
+      ],
+      "enabled": true,
+      "color": [
+       [
+        0,
+        0.2275,
+        0.1647,
+        0.0706
+       ],
+       [
+        1,
+        0.1373,
+        0.1529,
+        0.1804
+       ]
+      ],
+      "transparency": [
+       [
+        0,
+        0.05
+       ],
+       [
+        0.7,
+        0.15
+       ],
+       [
+        1,
+        0.6
+       ]
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "TextLabel",
+      "name": "ToastText",
+      "size": [
+       1,
+       0,
+       1,
+       0
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "LAYER REACHED  MAGMA ROCK",
+      "textSize": 18,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.949,
+       0.702,
+       0.2392
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Center",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 900,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [
+       {
+        "class": "UIStroke",
+        "thickness": 1.5,
+        "color": [
+         0,
+         0,
+         0
+        ],
+        "transparency": 0.4,
+        "applyStrokeMode": "Contextual",
+        "enabled": true
+       }
+      ],
+      "children": []
+     }
+    ]
+   },
+   {
+    "class": "Frame",
+    "name": "Pack",
+    "size": [
+     0.28,
+     0,
+     0,
+     104
+    ],
+    "position": [
+     0,
+     12,
+     1,
+     -12
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     0,
+     1
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 0.06,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       10
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.2314,
+       0.2588,
+       0.302
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     },
+     {
+      "class": "UIPadding",
+      "top": [
+       0,
+       10
+      ],
+      "bottom": [
+       0,
+       10
+      ],
+      "left": [
+       0,
+       10
+      ],
+      "right": [
+       0,
+       10
+      ]
+     }
+    ],
+    "children": [
+     {
+      "class": "ImageLabel",
+      "name": "PackIcon",
+      "size": [
+       0,
+       20,
+       0,
+       20
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "image": "rbxassetid://icon",
+      "imageColor3": [
+       0.6392,
+       0.6549,
+       0.6824
+      ],
+      "imageTransparency": 0,
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         4
+        ]
+       }
+      ],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "PackTitle",
+      "size": [
+       0.5,
+       -26,
+       0,
+       18
+      ],
+      "position": [
+       0,
+       26,
+       0,
+       1
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "Backpack T3",
+      "textSize": 15,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.9451,
+       0.9373,
+       0.9098
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Left",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "TextLabel",
+      "name": "PackCount",
+      "size": [
+       0.5,
+       0,
+       0,
+       18
+      ],
+      "position": [
+       1,
+       0,
+       0,
+       1
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       1,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "38 / 45",
+      "textSize": 15,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.949,
+       0.702,
+       0.2392
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Right",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 800,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "Frame",
+      "name": "PackBar",
+      "size": [
+       1,
+       0,
+       0,
+       14
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       26
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0.5,
+         0
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "Frame",
+        "name": "Fill",
+        "size": [
+         0.8444444444444444,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.949,
+         0.702,
+         0.2392
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0.5,
+           0
+          ]
+         }
+        ],
+        "children": []
+       }
+      ]
+     },
+     {
+      "class": "Frame",
+      "name": "Actions",
+      "size": [
+       1,
+       0,
+       0,
+       40
+      ],
+      "position": [
+       0,
+       0,
+       1,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       1
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "modifiers": [
+       {
+        "class": "UIListLayout",
+        "fillDirection": "Horizontal",
+        "padding": [
+         0,
+         8
+        ],
+        "horizontalAlignment": "Left",
+        "verticalAlignment": "Center",
+        "sortOrder": "LayoutOrder",
+        "wraps": false
+       }
+      ],
+      "children": [
+       {
+        "class": "TextButton",
+        "name": "Sell",
+        "size": [
+         0.46,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 1,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.949,
+         0.702,
+         0.2392
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0,
+           10
+          ]
+         },
+         {
+          "class": "UIStroke",
+          "thickness": 2,
+          "color": [
+           0.949,
+           0.702,
+           0.2392
+          ],
+          "transparency": 0,
+          "applyStrokeMode": "Border",
+          "enabled": true
+         },
+         {
+          "class": "UISizeConstraint",
+          "minSize": [
+           48,
+           48
+          ],
+          "maxSize": [
+           1e+30,
+           1e+30
+          ]
+         }
+        ],
+        "children": [
+         {
+          "class": "TextLabel",
+          "name": "Text",
+          "size": [
+           1,
+           0,
+           1,
+           0
+          ],
+          "position": [
+           0,
+           0,
+           0,
+           0
+          ],
+          "visible": true,
+          "zIndex": 1,
+          "layoutOrder": 0,
+          "anchorPoint": [
+           0,
+           0
+          ],
+          "rotation": 0,
+          "backgroundColor3": [
+           0.1373,
+           0.1529,
+           0.1804
+          ],
+          "backgroundTransparency": 1,
+          "clipsDescendants": false,
+          "automaticSize": "None",
+          "text": "Sell  $1,920",
+          "textSize": 17,
+          "textScaled": false,
+          "textWrapped": false,
+          "textColor3": [
+           0.1059,
+           0.1176,
+           0.1412
+          ],
+          "textTransparency": 0,
+          "textXAlignment": "Center",
+          "textYAlignment": "Center",
+          "fontFamily": "rbxasset://fonts/families/Nunito.json",
+          "fontWeight": 800,
+          "textStrokeColor3": [
+           0,
+           0,
+           0
+          ],
+          "textStrokeTransparency": 1,
+          "textTruncate": "AtEnd",
+          "richText": false,
+          "lineHeight": 1,
+          "modifiers": [],
+          "children": []
+         }
+        ]
+       },
+       {
+        "class": "TextButton",
+        "name": "Up",
+        "size": [
+         0.25,
+         -6,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 2,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1059,
+         0.1176,
+         0.1412
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0,
+           10
+          ]
+         },
+         {
+          "class": "UIStroke",
+          "thickness": 2,
+          "color": [
+           0.2314,
+           0.2588,
+           0.302
+          ],
+          "transparency": 0,
+          "applyStrokeMode": "Border",
+          "enabled": true
+         },
+         {
+          "class": "UISizeConstraint",
+          "minSize": [
+           48,
+           48
+          ],
+          "maxSize": [
+           1e+30,
+           1e+30
+          ]
+         }
+        ],
+        "children": [
+         {
+          "class": "TextLabel",
+          "name": "Text",
+          "size": [
+           1,
+           0,
+           1,
+           0
+          ],
+          "position": [
+           0,
+           0,
+           0,
+           0
+          ],
+          "visible": true,
+          "zIndex": 1,
+          "layoutOrder": 0,
+          "anchorPoint": [
+           0,
+           0
+          ],
+          "rotation": 0,
+          "backgroundColor3": [
+           0.1373,
+           0.1529,
+           0.1804
+          ],
+          "backgroundTransparency": 1,
+          "clipsDescendants": false,
+          "automaticSize": "None",
+          "text": "Up",
+          "textSize": 16,
+          "textScaled": false,
+          "textWrapped": false,
+          "textColor3": [
+           0.9451,
+           0.9373,
+           0.9098
+          ],
+          "textTransparency": 0,
+          "textXAlignment": "Center",
+          "textYAlignment": "Center",
+          "fontFamily": "rbxasset://fonts/families/Nunito.json",
+          "fontWeight": 800,
+          "textStrokeColor3": [
+           0,
+           0,
+           0
+          ],
+          "textStrokeTransparency": 1,
+          "textTruncate": "AtEnd",
+          "richText": false,
+          "lineHeight": 1,
+          "modifiers": [],
+          "children": []
+         }
+        ]
+       },
+       {
+        "class": "TextButton",
+        "name": "Down",
+        "size": [
+         0.25,
+         -6,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 3,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1059,
+         0.1176,
+         0.1412
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0,
+           10
+          ]
+         },
+         {
+          "class": "UIStroke",
+          "thickness": 2,
+          "color": [
+           0.2314,
+           0.2588,
+           0.302
+          ],
+          "transparency": 0,
+          "applyStrokeMode": "Border",
+          "enabled": true
+         },
+         {
+          "class": "UISizeConstraint",
+          "minSize": [
+           48,
+           48
+          ],
+          "maxSize": [
+           1e+30,
+           1e+30
+          ]
+         }
+        ],
+        "children": [
+         {
+          "class": "TextLabel",
+          "name": "Text",
+          "size": [
+           1,
+           0,
+           1,
+           0
+          ],
+          "position": [
+           0,
+           0,
+           0,
+           0
+          ],
+          "visible": true,
+          "zIndex": 1,
+          "layoutOrder": 0,
+          "anchorPoint": [
+           0,
+           0
+          ],
+          "rotation": 0,
+          "backgroundColor3": [
+           0.1373,
+           0.1529,
+           0.1804
+          ],
+          "backgroundTransparency": 1,
+          "clipsDescendants": false,
+          "automaticSize": "None",
+          "text": "Down",
+          "textSize": 16,
+          "textScaled": false,
+          "textWrapped": false,
+          "textColor3": [
+           0.9451,
+           0.9373,
+           0.9098
+          ],
+          "textTransparency": 0,
+          "textXAlignment": "Center",
+          "textYAlignment": "Center",
+          "fontFamily": "rbxasset://fonts/families/Nunito.json",
+          "fontWeight": 800,
+          "textStrokeColor3": [
+           0,
+           0,
+           0
+          ],
+          "textStrokeTransparency": 1,
+          "textTruncate": "AtEnd",
+          "richText": false,
+          "lineHeight": 1,
+          "modifiers": [],
+          "children": []
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "class": "Frame",
+    "name": "Menu",
+    "size": [
+     0,
+     64,
+     0,
+     0
+    ],
+    "position": [
+     1,
+     -12,
+     0.5,
+     30
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     1,
+     0.5
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.1373,
+     0.1529,
+     0.1804
+    ],
+    "backgroundTransparency": 1,
+    "clipsDescendants": false,
+    "automaticSize": "Y",
+    "modifiers": [
+     {
+      "class": "UIListLayout",
+      "fillDirection": "Vertical",
+      "padding": [
+       0,
+       8
+      ],
+      "horizontalAlignment": "Center",
+      "verticalAlignment": "Center",
+      "sortOrder": "LayoutOrder",
+      "wraps": false
+     }
+    ],
+    "children": [
+     {
+      "class": "TextButton",
+      "name": "MenuShop",
+      "size": [
+       1,
+       0,
+       0,
+       52
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         10
+        ]
+       },
+       {
+        "class": "UIStroke",
+        "thickness": 2,
+        "color": [
+         0.2314,
+         0.2588,
+         0.302
+        ],
+        "transparency": 0,
+        "applyStrokeMode": "Border",
+        "enabled": true
+       },
+       {
+        "class": "UISizeConstraint",
+        "minSize": [
+         48,
+         48
+        ],
+        "maxSize": [
+         1e+30,
+         1e+30
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "TextLabel",
+        "name": "Text",
+        "size": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1373,
+         0.1529,
+         0.1804
+        ],
+        "backgroundTransparency": 1,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "Shop",
+        "textSize": 14,
+        "textScaled": false,
+        "textWrapped": false,
+        "textColor3": [
+         0.9451,
+         0.9373,
+         0.9098
+        ],
+        "textTransparency": 0,
+        "textXAlignment": "Center",
+        "textYAlignment": "Center",
+        "fontFamily": "rbxasset://fonts/families/Nunito.json",
+        "fontWeight": 800,
+        "textStrokeColor3": [
+         0,
+         0,
+         0
+        ],
+        "textStrokeTransparency": 1,
+        "textTruncate": "AtEnd",
+        "richText": false,
+        "lineHeight": 1,
+        "modifiers": [],
+        "children": []
+       }
+      ]
+     },
+     {
+      "class": "TextButton",
+      "name": "MenuBook",
+      "size": [
+       1,
+       0,
+       0,
+       52
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 1,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         10
+        ]
+       },
+       {
+        "class": "UIStroke",
+        "thickness": 2,
+        "color": [
+         0.2314,
+         0.2588,
+         0.302
+        ],
+        "transparency": 0,
+        "applyStrokeMode": "Border",
+        "enabled": true
+       },
+       {
+        "class": "UISizeConstraint",
+        "minSize": [
+         48,
+         48
+        ],
+        "maxSize": [
+         1e+30,
+         1e+30
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "TextLabel",
+        "name": "Text",
+        "size": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1373,
+         0.1529,
+         0.1804
+        ],
+        "backgroundTransparency": 1,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "Book",
+        "textSize": 14,
+        "textScaled": false,
+        "textWrapped": false,
+        "textColor3": [
+         0.9451,
+         0.9373,
+         0.9098
+        ],
+        "textTransparency": 0,
+        "textXAlignment": "Center",
+        "textYAlignment": "Center",
+        "fontFamily": "rbxasset://fonts/families/Nunito.json",
+        "fontWeight": 800,
+        "textStrokeColor3": [
+         0,
+         0,
+         0
+        ],
+        "textStrokeTransparency": 1,
+        "textTruncate": "AtEnd",
+        "richText": false,
+        "lineHeight": 1,
+        "modifiers": [],
+        "children": []
+       }
+      ]
+     },
+     {
+      "class": "TextButton",
+      "name": "MenuQuests",
+      "size": [
+       1,
+       0,
+       0,
+       52
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 2,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         10
+        ]
+       },
+       {
+        "class": "UIStroke",
+        "thickness": 2,
+        "color": [
+         0.2314,
+         0.2588,
+         0.302
+        ],
+        "transparency": 0,
+        "applyStrokeMode": "Border",
+        "enabled": true
+       },
+       {
+        "class": "UISizeConstraint",
+        "minSize": [
+         48,
+         48
+        ],
+        "maxSize": [
+         1e+30,
+         1e+30
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "TextLabel",
+        "name": "Text",
+        "size": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1373,
+         0.1529,
+         0.1804
+        ],
+        "backgroundTransparency": 1,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "Quests",
+        "textSize": 14,
+        "textScaled": false,
+        "textWrapped": false,
+        "textColor3": [
+         0.9451,
+         0.9373,
+         0.9098
+        ],
+        "textTransparency": 0,
+        "textXAlignment": "Center",
+        "textYAlignment": "Center",
+        "fontFamily": "rbxasset://fonts/families/Nunito.json",
+        "fontWeight": 800,
+        "textStrokeColor3": [
+         0,
+         0,
+         0
+        ],
+        "textStrokeTransparency": 1,
+        "textTruncate": "AtEnd",
+        "richText": false,
+        "lineHeight": 1,
+        "modifiers": [],
+        "children": []
+       }
+      ]
+     },
+     {
+      "class": "TextButton",
+      "name": "MenuGems",
+      "size": [
+       1,
+       0,
+       0,
+       52
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 3,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         10
+        ]
+       },
+       {
+        "class": "UIStroke",
+        "thickness": 2,
+        "color": [
+         0.2314,
+         0.2588,
+         0.302
+        ],
+        "transparency": 0,
+        "applyStrokeMode": "Border",
+        "enabled": true
+       },
+       {
+        "class": "UISizeConstraint",
+        "minSize": [
+         48,
+         48
+        ],
+        "maxSize": [
+         1e+30,
+         1e+30
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "TextLabel",
+        "name": "Text",
+        "size": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1373,
+         0.1529,
+         0.1804
+        ],
+        "backgroundTransparency": 1,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "Gems",
+        "textSize": 14,
+        "textScaled": false,
+        "textWrapped": false,
+        "textColor3": [
+         0.9451,
+         0.9373,
+         0.9098
+        ],
+        "textTransparency": 0,
+        "textXAlignment": "Center",
+        "textYAlignment": "Center",
+        "fontFamily": "rbxasset://fonts/families/Nunito.json",
+        "fontWeight": 800,
+        "textStrokeColor3": [
+         0,
+         0,
+         0
+        ],
+        "textStrokeTransparency": 1,
+        "textTruncate": "AtEnd",
+        "richText": false,
+        "lineHeight": 1,
+        "modifiers": [],
+        "children": []
+       }
+      ]
+     },
+     {
+      "class": "TextButton",
+      "name": "MenuMore",
+      "size": [
+       1,
+       0,
+       0,
+       52
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 4,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0,
+         10
+        ]
+       },
+       {
+        "class": "UIStroke",
+        "thickness": 2,
+        "color": [
+         0.2314,
+         0.2588,
+         0.302
+        ],
+        "transparency": 0,
+        "applyStrokeMode": "Border",
+        "enabled": true
+       },
+       {
+        "class": "UISizeConstraint",
+        "minSize": [
+         48,
+         48
+        ],
+        "maxSize": [
+         1e+30,
+         1e+30
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "TextLabel",
+        "name": "Text",
+        "size": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1373,
+         0.1529,
+         0.1804
+        ],
+        "backgroundTransparency": 1,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "text": "More",
+        "textSize": 14,
+        "textScaled": false,
+        "textWrapped": false,
+        "textColor3": [
+         0.9451,
+         0.9373,
+         0.9098
+        ],
+        "textTransparency": 0,
+        "textXAlignment": "Center",
+        "textYAlignment": "Center",
+        "fontFamily": "rbxasset://fonts/families/Nunito.json",
+        "fontWeight": 800,
+        "textStrokeColor3": [
+         0,
+         0,
+         0
+        ],
+        "textStrokeTransparency": 1,
+        "textTruncate": "AtEnd",
+        "richText": false,
+        "lineHeight": 1,
+        "modifiers": [],
+        "children": []
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "class": "TextButton",
+    "name": "Dig",
+    "size": [
+     0,
+     130,
+     0,
+     86
+    ],
+    "position": [
+     1,
+     -100,
+     1,
+     -12
+    ],
+    "visible": true,
+    "zIndex": 1,
+    "layoutOrder": 0,
+    "anchorPoint": [
+     1,
+     1
+    ],
+    "rotation": 0,
+    "backgroundColor3": [
+     0.2471,
+     0.7137,
+     0.6588
+    ],
+    "backgroundTransparency": 0,
+    "clipsDescendants": false,
+    "automaticSize": "None",
+    "text": "",
+    "modifiers": [
+     {
+      "class": "UICorner",
+      "cornerRadius": [
+       0,
+       14
+      ]
+     },
+     {
+      "class": "UIStroke",
+      "thickness": 2,
+      "color": [
+       0.498,
+       0.8784,
+       0.8314
+      ],
+      "transparency": 0,
+      "applyStrokeMode": "Border",
+      "enabled": true
+     }
+    ],
+    "children": [
+     {
+      "class": "TextLabel",
+      "name": "DigText",
+      "size": [
+       1,
+       0,
+       1,
+       -14
+      ],
+      "position": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0,
+       0
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1373,
+       0.1529,
+       0.1804
+      ],
+      "backgroundTransparency": 1,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "text": "DIG",
+      "textSize": 32,
+      "textScaled": false,
+      "textWrapped": false,
+      "textColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "textTransparency": 0,
+      "textXAlignment": "Center",
+      "textYAlignment": "Center",
+      "fontFamily": "rbxasset://fonts/families/Nunito.json",
+      "fontWeight": 900,
+      "textStrokeColor3": [
+       0,
+       0,
+       0
+      ],
+      "textStrokeTransparency": 1,
+      "textTruncate": "AtEnd",
+      "richText": false,
+      "lineHeight": 1,
+      "modifiers": [],
+      "children": []
+     },
+     {
+      "class": "Frame",
+      "name": "DigProgress",
+      "size": [
+       1,
+       -16,
+       0,
+       8
+      ],
+      "position": [
+       0.5,
+       0,
+       1,
+       -8
+      ],
+      "visible": true,
+      "zIndex": 1,
+      "layoutOrder": 0,
+      "anchorPoint": [
+       0.5,
+       1
+      ],
+      "rotation": 0,
+      "backgroundColor3": [
+       0.1059,
+       0.1176,
+       0.1412
+      ],
+      "backgroundTransparency": 0,
+      "clipsDescendants": false,
+      "automaticSize": "None",
+      "modifiers": [
+       {
+        "class": "UICorner",
+        "cornerRadius": [
+         0.5,
+         0
+        ]
+       }
+      ],
+      "children": [
+       {
+        "class": "Frame",
+        "name": "Fill",
+        "size": [
+         0.45,
+         0,
+         1,
+         0
+        ],
+        "position": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "visible": true,
+        "zIndex": 1,
+        "layoutOrder": 0,
+        "anchorPoint": [
+         0,
+         0
+        ],
+        "rotation": 0,
+        "backgroundColor3": [
+         0.1059,
+         0.1176,
+         0.1412
+        ],
+        "backgroundTransparency": 0,
+        "clipsDescendants": false,
+        "automaticSize": "None",
+        "modifiers": [
+         {
+          "class": "UICorner",
+          "cornerRadius": [
+           0.5,
+           0
+          ]
+         }
+        ],
+        "children": []
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
