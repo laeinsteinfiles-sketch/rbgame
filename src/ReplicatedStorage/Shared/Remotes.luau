@@ -15,24 +15,26 @@ Remotes.ClientToServer = {
 	"BuyUpgrade", -- ("drill" | "pack")
 	"ClaimQuest", -- (questId)
 	"Travel", -- ("up" | "down")
-	"BuyMeta", -- ("digSpeed" | "pack")
+	"BuyMeta", -- ("digSpeed" | "pack" | "skin", skinId?)
 	"ClaimCollection", -- (oreId, thresholdIndex)
-	"OpenEgg", -- ()
+	"OpenEgg", -- (eggId)
 	"Equip", -- ("skin" | "pet", id)
+	"SaveSettings", -- ({ sfx, shake, autoDig })
 }
 
 -- server -> client
 Remotes.ServerToClient = {
-	"DigResult", -- (blockIndex, accepted, roll?)
+	"DigResult", -- (blockIndex, accepted, finalDepth)
 	"Resync", -- (depth)
 	"BackpackSync", -- (backpack, packUsed)
 	"SellResult", -- (cashGained, oreCount)
 	"Notify", -- (kind, message)
-	"RoundResults", -- (standings, yourPlacement, gemsEarned)
+	"RaceEvent", -- (kind, name, value) lead changes, near-core calls, final minute
+	"RoundResults", -- (standings, yourPlacement, gemsEarned, personalBest)
 	"ProfileSync", -- (snapshot)
 	"QuestSync", -- (dayNumber, progress, claimed)
-	"EggResult", -- (petId, duplicate)
-	"MegaEvent", -- ("start" | "end" | "goal", index)
+	"EggResult", -- (eggId, petId, sizeId, duplicate)
+	"MegaEvent", -- ("warn" | "start" | "end" | "goal", index)
 }
 
 local FOLDER_NAME = "Remotes"
