@@ -12,6 +12,7 @@ local Services = script.Parent.Services
 
 Remotes.init()
 require(Services.DataService).init()
+require(Services.WorldBuilder).init()
 require(Services.PlotService).init()
 require(Services.RoundState).init()
 require(Services.MetaService).init()
@@ -20,6 +21,7 @@ require(Services.ShopService).init()
 require(Services.TravelService).init()
 require(Services.DigService).init()
 require(Services.RoundService).init()
+require(Services.SafetyService).init()
 
 local unsetPasses = {}
 for name, id in AssetIds.Gamepasses do

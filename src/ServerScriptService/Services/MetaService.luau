@@ -41,16 +41,7 @@ local function notify(player: Player, kind: string, message: string)
 	Remotes.get("Notify"):FireClient(player, kind, message)
 end
 
-local function refreshPasses(player: Player)
-	local owned: { [string]: boolean } = {}
-	for name, id in AssetIds.Gamepasses do
-		if AssetIds.isSet(id) then
-			local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, id)
-			owned[name] = ok and result == true
-		else
-			owned[name] = false
-		end
-	end
+local function publishPasses(player: Player, owned: { [string]: boolean })
 	passCache[player] = owned
 	local names = {}
 	for name, has in owned do
@@ -61,6 +52,31 @@ local function refreshPasses(player: Player)
 	table.sort(names)
 	player:SetAttribute("Passes", table.concat(names, ","))
 	MetaService.onPassesRefreshed:Fire(player)
+end
+
+local function refreshPasses(player: Player)
+	local owned: { [string]: boolean } = {}
+	for name, id in AssetIds.Gamepasses do
+		if AssetIds.isSet(id) then
+			local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, id)
+			owned[name] = ok and result == true
+		else
+			owned[name] = false
+		end
+	end
+	-- The checks yield; a player who left meanwhile must not be re-cached.
+	if player.Parent ~= Players then
+		return
+	end
+	-- Keep passes granted by a purchase this session even if the (cached)
+	-- ownership check has not caught up yet.
+	local previous = passCache[player]
+	if previous then
+		for name, has in previous do
+			owned[name] = owned[name] or has
+		end
+	end
+	publishPasses(player, owned)
 end
 
 function MetaService.ownsPass(player: Player, name: PassName): boolean
@@ -238,6 +254,9 @@ function MetaService.recordCollect(player: Player, oreId: string, mutationId: st
 	end
 	entry.count += 1
 	entry.mutations[mutationId] = (entry.mutations[mutationId] or 0) + 1
+	-- Batched so the collection book (and its claim buttons) stay current
+	-- without a profile push per block.
+	DataService.pushSoon(player)
 end
 
 function MetaService.init()
@@ -279,10 +298,19 @@ function MetaService.init()
 		end
 	end)
 
-	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, _passId, purchased)
-		if purchased then
-			refreshPasses(player)
+	-- UserOwnsGamePassAsync can keep answering false for a while after an
+	-- in-game purchase, so trust the purchase event for the pass it names.
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+		if not purchased or player.Parent ~= Players then
+			return
 		end
+		local owned = table.clone(passCache[player] or {})
+		for name, id in AssetIds.Gamepasses do
+			if AssetIds.isSet(id) and id == passId then
+				owned[name] = true
+			end
+		end
+		publishPasses(player, owned)
 	end)
 
 	DataService.onLoaded:Connect(function(player)
