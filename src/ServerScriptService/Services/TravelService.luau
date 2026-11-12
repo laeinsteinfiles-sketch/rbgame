@@ -2,6 +2,7 @@
 -- Explorer: ServerScriptService/Services/TravelService (ModuleScript)
 -- The elevator. Travel takes real time that scales with depth, so a bigger
 -- pack is worth something and trips are a decision, not a free teleport.
+-- Arriving at the top sells the backpack automatically.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,8 +13,13 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
 local RoundState = require(script.Parent.RoundState)
+local ShopService = require(script.Parent.ShopService)
 
 local TravelService = {}
+
+local function notify(player: Player, kind: string, message: string)
+	Remotes.get("Notify"):FireClient(player, kind, message)
+end
 
 local function travel(player: Player, direction: any)
 	if direction ~= "up" and direction ~= "down" then
@@ -24,7 +30,11 @@ local function travel(player: Player, direction: any)
 		return
 	end
 	local now = os.clock()
-	if state.travelingUntil > now or now - state.lastTravelAt < GameConfig.Travel.Cooldown then
+	if state.travelingUntil > now then
+		return
+	end
+	if now - state.lastTravelAt < GameConfig.Travel.Cooldown then
+		notify(player, "info", "Elevator is getting ready…")
 		return
 	end
 	local character = player.Character
@@ -36,7 +46,9 @@ local function travel(player: Player, direction: any)
 	local duration = Economy.travelTime(state.depth)
 	state.lastTravelAt = now
 	state.travelingUntil = now + duration
+	state.holding = false
 	player:SetAttribute("Traveling", direction)
+	player:SetAttribute("TravelEndsAt", workspace:GetServerTimeNow() + duration)
 
 	task.delay(duration, function()
 		if RoundState.get(player) ~= state then
@@ -48,6 +60,10 @@ local function travel(player: Player, direction: any)
 		local currentCharacter = player.Character
 		if target and currentCharacter then
 			currentCharacter:PivotTo(target)
+		end
+		state.atSurface = direction == "up"
+		if direction == "up" and state.packUsed > 0 and RoundState.phase == "Active" then
+			ShopService.sell(player, true)
 		end
 	end)
 end

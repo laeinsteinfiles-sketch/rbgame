@@ -20,7 +20,9 @@ local function notify(player: Player, kind: string, message: string)
 	Remotes.get("Notify"):FireClient(player, kind, message)
 end
 
-function ShopService.sell(player: Player)
+--- Sells the whole backpack. `arrived` is set when the elevator has just
+--- placed the player at their post, which the server itself vouches for.
+function ShopService.sell(player: Player, arrived: boolean?)
 	local state = RoundState.get(player)
 	if not state or RoundState.phase ~= "Active" then
 		return
@@ -29,8 +31,10 @@ function ShopService.sell(player: Player)
 		notify(player, "error", "Nothing to sell")
 		return
 	end
-	if not PlotService.isNearSellPad(player) then
-		notify(player, "error", "Sell at your trading post")
+	-- Position alone is client-reported; the server also has to have seen
+	-- the player reach the surface (elevator, respawn or round reset).
+	if not arrived and not (state.atSurface and PlotService.isNearSellPad(player)) then
+		notify(player, "error", "Ride up to your trading post to sell")
 		return
 	end
 	local total, count = 0, 0

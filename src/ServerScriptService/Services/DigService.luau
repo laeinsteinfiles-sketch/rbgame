@@ -47,20 +47,24 @@ local function reject(player: Player, state: RoundState.PlayerRound, index: numb
 	end
 end
 
---- True when the character is roughly where a player at `depth` should be.
-local function positionOk(player: Player, depth: number): boolean
+type PositionCheck = "ok" | "absent" | "far"
+
+--- Where the character is relative to where a player at `depth` should be.
+--- "absent" (dead, respawning, no plot) is never the client's fault.
+local function checkPosition(player: Player, depth: number): PositionCheck
 	local plot = PlotService.getPlot(player)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not plot or not root or not root:IsA("BasePart") or not humanoid or humanoid.Health <= 0 then
-		return false
+		return "absent"
 	end
 	local expectedY = G.SurfaceY - depth * G.BlockHeight + 3
 	local dy = math.abs(root.Position.Y - expectedY)
 	local dx = math.abs(root.Position.X - plot.center.X)
 	local dz = math.abs(root.Position.Z - plot.center.Z)
-	return dy <= D.MaxPositionErrorBlocks * G.BlockHeight and dx <= G.BlockSize and dz <= G.BlockSize
+	local ok = dy <= D.MaxPositionErrorBlocks * G.BlockHeight and dx <= G.BlockSize and dz <= G.BlockSize
+	return if ok then "ok" else "far"
 end
 
 local function onDigRequest(player: Player, index: any)
@@ -87,26 +91,36 @@ local function onDigRequest(player: Player, index: any)
 		reject(player, state, index, false)
 		return
 	end
-	if not positionOk(player, state.depth) then
+	local position = checkPosition(player, state.depth)
+	if position == "absent" then
+		reject(player, state, index, false)
+		return
+	elseif position == "far" then
 		violation(player, state, "position out of range")
 		reject(player, state, index, true)
 		return
 	end
 
 	-- Power can only have gone up or down since the last block (upgrade, Mega
-	-- Drill edge, catch-up tick). Judge against the kinder of the two.
+	-- Drill edge, catch-up tick). Judge against the kinder of the two, and
+	-- against banked time so lag that bunches two requests is not punished.
 	local powerNow = RoundState.power(player)
 	local required = Economy.minInterval(index, math.max(powerNow, state.lastPower))
-	local tolerance = math.max(D.ToleranceMin, required * D.ToleranceFraction)
-	if now - state.lastDigAt < required - tolerance then
-		violation(player, state, string.format("dug too fast (%.2fs < %.2fs)", now - state.lastDigAt, required))
+	local available = math.min(D.TimeBankSeconds, state.digBank + (now - state.lastDigAt))
+	if available < required then
+		if now - state.lastDigAt < required * D.TooFastFraction then
+			violation(player, state, string.format("dug too fast (%.2fs < %.2fs)", now - state.lastDigAt, required))
+		end
 		reject(player, state, index, false)
 		return
 	end
 
+	state.digBank = available - required
 	state.depth = index
+	state.depthReachedAt = now
 	state.lastDigAt = now
 	state.lastPower = powerNow
+	state.atSurface = false
 	state.dugThisRound += 1
 	if RoundState.megaActive then
 		state.megaDug += 1
@@ -141,38 +155,49 @@ local function onDigRequest(player: Player, index: any)
 			end
 		elseif now - (lastPackFullNotice[player] or 0) > 3 then
 			lastPackFullNotice[player] = now
-			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full — ore left behind")
+			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full! Go up and sell")
 		end
 	end
 	if roll.relic then
 		MetaService.addRelic(player, 1)
-		Remotes.get("Notify"):FireClient(player, "relic", "Relic found")
+		Remotes.get("Notify"):FireClient(player, "relic", "Relic found!")
 	end
 
+	if index >= GameConfig.CoreDepth then
+		state.reachedCore = true
+	end
 	RoundState.replicate(player)
 	if oreAdded then
 		RoundState.syncBackpack(player)
 	end
-	Remotes.get("DigResult"):FireClient(player, index, true, roll, state.depth)
+	-- `oreAdded` lets the client tell a kept ore from one left behind.
+	Remotes.get("DigResult"):FireClient(player, index, true, roll, state.depth, oreAdded)
 
 	if Layers.indexAt(index) ~= Layers.indexAt(index - 1) then
 		Remotes.get("Notify"):FireClient(player, "layer", Layers.layerAt(index).name)
 	end
-	if index >= GameConfig.CoreDepth then
-		state.reachedCore = true
+	if state.reachedCore then
 		RoundService.coreReached(player)
 	end
 end
 
 function DigService.init()
 	local limiter = RateLimiter.new(GameConfig.RateLimits.DigRequest.capacity, GameConfig.RateLimits.DigRequest.refill)
+	local holdLimiter = RateLimiter.new(GameConfig.RateLimits.DigHold.capacity, GameConfig.RateLimits.DigHold.refill)
 	Remotes.get("DigRequest").OnServerEvent:Connect(function(player, index)
 		if limiter:allow(player) then
 			onDigRequest(player, index)
 		end
 	end)
+	Remotes.get("DigHold").OnServerEvent:Connect(function(player, holding)
+		local state = RoundState.get(player)
+		if state and typeof(holding) == "boolean" and holdLimiter:allow(player) then
+			state.holding = holding
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		limiter:forget(player)
+		holdLimiter:forget(player)
 		lastPackFullNotice[player] = nil
 	end)
 end
