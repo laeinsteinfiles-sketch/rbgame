@@ -17,16 +17,24 @@ local GameConfig = {}
 GameConfig.Geometry = {
 	BlockSize = 8, -- shaft width in studs
 	BlockHeight = 4, -- studs per metre of depth
-	PlotSpacing = 96,
-	PlotColumns = 4,
 	MaxPlayers = 12,
-	IslandSize = 44,
 	SurfaceY = 0,
-	SellPadOffset = 14, -- studs from the shaft centre along +X
 	SellRadius = 12, -- how close the character must be to the sell pad
 	VisibleBlocksBelow = 10, -- blocks rendered under the player
+	DecoratedBlocks = 2, -- only the top blocks are visible from the shaft camera
 	WallChunkBlocks = 8, -- wall segment height in blocks
 	WallChunksAround = 1, -- chunks rendered above and below the current one
+}
+
+-- Island ring around the hub. Local island frame: -Z faces the hub.
+GameConfig.World = {
+	RingRadius = 150,
+	HubRadius = 46,
+	HubTop = 4,
+	IslandHalf = 23,
+	SellPad = { x = 13, z = -7 },
+	Workshop = { x = -13, z = -7 },
+	Spawn = { x = 0, z = 14 },
 }
 
 GameConfig.Round = {
@@ -40,6 +48,7 @@ GameConfig.Round = {
 		PowerMult = 1.5,
 		GoalPerPlayer = 45, -- blocks dug per online player to fill the shared bar
 		GemBonus = 20,
+		WarnSeconds = 10,
 	},
 	CatchUp = {
 		MaxBonus = 0.15,
@@ -52,6 +61,12 @@ GameConfig.Round = {
 		DepthPerGem = 50, -- +1 gem per 50 m of final depth...
 		DepthGemCap = 30, -- ...capped here
 	},
+	Events = {
+		LeadMinDepth = 12, -- no lead-change calls in the first scramble
+		LeadCooldown = 8, -- seconds between "takes the lead" calls
+		NearCoreMetres = 100,
+		FinalCallSeconds = 60,
+	},
 }
 
 GameConfig.Dig = {
@@ -60,8 +75,9 @@ GameConfig.Dig = {
 	DropTime = 0.18,
 	ToleranceFraction = 0.12,
 	ToleranceMin = 0.08,
-	MaxPositionErrorBlocks = 6,
+	MaxPositionErrorBlocks = 8,
 	ViolationKickThreshold = 25,
+	TicksPerBlock = 4, -- audible/visible steps per block
 }
 
 GameConfig.Travel = {
@@ -69,6 +85,18 @@ GameConfig.Travel = {
 	PerMetre = 0.003,
 	Max = 5,
 	Cooldown = 2,
+}
+
+-- The race course is shared by every player in a round (one course seed);
+-- only loot is per player. See Shared/Course.
+GameConfig.Course = {
+	MinPocketDepth = 15,
+	PocketLength = { min = 2, max = 6 },
+	BlastMinDepth = 40,
+	BlastDepth = 3, -- blocks a blast charge clears below itself
+	ChestEvery = 100, -- metres
+	ChestCashBase = 25,
+	ChestCashPerMetre = 0.3, -- (tuned)
 }
 
 -- cost = cash to reach this tier from the previous one. Tier 1 is free.
@@ -107,6 +135,8 @@ GameConfig.Layers = {
 		groundColor = "8A6E4B",
 		wallColor = "6E5A40",
 		accentColor = "B8956A",
+		pocketChance = 0.006,
+		blastChance = 0,
 		mood = {
 			ambient = "8F8578",
 			outdoorAmbient = "A89C8C",
@@ -115,8 +145,8 @@ GameConfig.Layers = {
 			atmosphereColor = "C9B79C",
 			atmosphereDensity = 0.38,
 			atmosphereHaze = 1.6,
-			saturation = -0.15,
-			contrast = 0.05,
+			saturation = -0.12,
+			contrast = 0.06,
 			tint = "FFF6E8",
 			brightness = 0,
 		},
@@ -137,6 +167,8 @@ GameConfig.Layers = {
 		groundColor = "6B6E73",
 		wallColor = "55585E",
 		accentColor = "8A8E96",
+		pocketChance = 0.01,
+		blastChance = 0.005,
 		mood = {
 			ambient = "5E6166",
 			outdoorAmbient = "6F7378",
@@ -145,7 +177,7 @@ GameConfig.Layers = {
 			atmosphereColor = "8C8F94",
 			atmosphereDensity = 0.48,
 			atmosphereHaze = 2.2,
-			saturation = -0.3,
+			saturation = -0.28,
 			contrast = 0.1,
 			tint = "EAF0F5",
 			brightness = -0.03,
@@ -169,6 +201,8 @@ GameConfig.Layers = {
 		groundColor = "4F4A5C",
 		wallColor = "3E3A4A",
 		accentColor = "6E667F",
+		pocketChance = 0.016,
+		blastChance = 0.007,
 		mood = {
 			ambient = "3C3845",
 			outdoorAmbient = "4A4654",
@@ -177,7 +211,7 @@ GameConfig.Layers = {
 			atmosphereColor = "5B5666",
 			atmosphereDensity = 0.58,
 			atmosphereHaze = 2.8,
-			saturation = -0.2,
+			saturation = -0.18,
 			contrast = 0.15,
 			tint = "F2E6D8",
 			brightness = -0.06,
@@ -195,13 +229,13 @@ GameConfig.Layers = {
 
 -- Ore is the only saturated thing in the ground, by design.
 GameConfig.Ores = {
-	{ id = "coal", name = "Coal", value = 2, color = "2B2B2B", material = "Slate", rarity = 1 },
-	{ id = "copper", name = "Copper", value = 6, color = "E07A3F", material = "Metal", rarity = 1 },
-	{ id = "iron", name = "Iron", value = 14, color = "A9ACB6", material = "Metal", rarity = 2 },
-	{ id = "silver", name = "Silver", value = 35, color = "E6E8EF", material = "Metal", rarity = 2 },
-	{ id = "gold", name = "Gold", value = 70, color = "FFC53D", material = "Metal", rarity = 3 },
-	{ id = "sapphire", name = "Sapphire", value = 120, color = "2F6FE6", material = "Glass", rarity = 4 },
-	{ id = "ruby", name = "Ruby", value = 200, color = "E0243F", material = "Glass", rarity = 5 },
+	{ id = "coal", name = "Coal", value = 2, color = "2B2B2B", material = "Slate", rarity = 1, shape = "chunk" },
+	{ id = "copper", name = "Copper", value = 6, color = "E07A3F", material = "Metal", rarity = 1, shape = "nugget" },
+	{ id = "iron", name = "Iron", value = 14, color = "A9ACB6", material = "Metal", rarity = 2, shape = "nugget" },
+	{ id = "silver", name = "Silver", value = 35, color = "E6E8EF", material = "Metal", rarity = 2, shape = "nugget" },
+	{ id = "gold", name = "Gold", value = 70, color = "FFC53D", material = "Metal", rarity = 3, shape = "nugget" },
+	{ id = "sapphire", name = "Sapphire", value = 120, color = "2F6FE6", material = "Glass", rarity = 4, shape = "crystal" },
+	{ id = "ruby", name = "Ruby", value = 200, color = "E0243F", material = "Glass", rarity = 5, shape = "crystal" },
 } :: { OreDef }
 
 -- Chances must sum to 1. Odds are shown in the collection book.
@@ -211,6 +245,19 @@ GameConfig.Mutations = {
 	{ id = "ancient", name = "Ancient", chance = 0.015, mult = 8, color = "F2B33D" },
 	{ id = "molten", name = "Molten", chance = 0.005, mult = 20, color = "FF6A2A" },
 } :: { Types.MutationDef }
+
+-- Rarity colours are UI accents (chips, card rims, hatch rays), never panel fills.
+GameConfig.Rarities = {
+	common = { name = "Common", color = "C9C2B4", order = 1 },
+	uncommon = { name = "Uncommon", color = "8BCB6B", order = 2 },
+	rare = { name = "Rare", color = "4FA8E8", order = 3 },
+	epic = { name = "Epic", color = "C08CF0", order = 4 },
+	legendary = { name = "Legendary", color = "F2B33D", order = 5 },
+	mythic = { name = "Mythic", color = "FF5E7A", order = 6 },
+}
+
+-- Ore rarity number -> rarity id, for chips and card rims.
+GameConfig.OreRarity = { "common", "uncommon", "rare", "epic", "legendary" } :: { Types.Rarity }
 
 GameConfig.Relic = {
 	MinDepth = 100,
@@ -228,27 +275,53 @@ GameConfig.Meta = {
 	StarterPackTierWithPass = 2,
 }
 
+-- gemBonus is a meta-only multiplier on gem rewards; pets never touch the race.
 GameConfig.Pets = {
-	EggCost = 150,
-	-- Odds are displayed verbatim in the meta shop. Must sum to 100.
-	Odds = {
-		{ tier = "common", chance = 60 },
-		{ tier = "uncommon", chance = 25 },
-		{ tier = "rare", chance = 10 },
-		{ tier = "epic", chance = 4 },
-		{ tier = "legendary", chance = 1 },
+	{ id = "mole", name = "Mole", tier = "common", gemBonus = 0.02, color = "7A6652", flyer = false },
+	{ id = "beetle", name = "Dust Beetle", tier = "common", gemBonus = 0.02, color = "5F6B5A", flyer = false },
+	{ id = "gecko", name = "Shale Gecko", tier = "uncommon", gemBonus = 0.04, color = "7C8A96", flyer = false },
+	{ id = "bat", name = "Cave Bat", tier = "rare", gemBonus = 0.06, color = "5A5466", flyer = true },
+	{ id = "crab", name = "Copper Crab", tier = "rare", gemBonus = 0.07, color = "C9743E", flyer = false },
+	{ id = "owl", name = "Hollow Owl", tier = "epic", gemBonus = 0.1, color = "6F6A85", flyer = true },
+	{ id = "salamander", name = "Core Salamander", tier = "legendary", gemBonus = 0.15, color = "D9762B", flyer = false },
+} :: { Types.PetDef }
+
+-- Every egg prints these odds next to its buy button. Each list sums to 100.
+GameConfig.Eggs = {
+	{
+		id = "dusty",
+		name = "Dusty Egg",
+		cost = 150,
+		shell = "D8C9A8",
+		spots = "9C8566",
+		pets = { { id = "mole", chance = 45 }, { id = "beetle", chance = 35 }, { id = "gecko", chance = 15 }, { id = "bat", chance = 5 } },
 	},
-	-- gemBonus is a meta-only multiplier on gem rewards; pets never touch the race.
-	List = {
-		{ id = "mole", name = "Mole", tier = "common", gemBonus = 0.02, color = "7A6652" },
-		{ id = "beetle", name = "Dust Beetle", tier = "common", gemBonus = 0.02, color = "5F6B5A" },
-		{ id = "gecko", name = "Shale Gecko", tier = "uncommon", gemBonus = 0.04, color = "7C8A96" },
-		{ id = "bat", name = "Cave Bat", tier = "uncommon", gemBonus = 0.04, color = "5A5466" },
-		{ id = "crab", name = "Copper Crab", tier = "rare", gemBonus = 0.07, color = "C9743E" },
-		{ id = "owl", name = "Hollow Owl", tier = "epic", gemBonus = 0.1, color = "6F6A85" },
-		{ id = "salamander", name = "Core Salamander", tier = "legendary", gemBonus = 0.15, color = "F2B33D" },
+	{
+		id = "crystal",
+		name = "Crystal Egg",
+		cost = 450,
+		shell = "B9D7DA",
+		spots = "4F9AA5",
+		pets = { { id = "gecko", chance = 30 }, { id = "bat", chance = 30 }, { id = "crab", chance = 30 }, { id = "owl", chance = 10 } },
 	},
-} :: { EggCost: number, Odds: { { tier: string, chance: number } }, List: { Types.PetDef } }
+	{
+		id = "core",
+		name = "Core Egg",
+		cost = 1200,
+		shell = "3A2A24",
+		spots = "F2B33D",
+		pets = { { id = "crab", chance = 50 }, { id = "owl", chance = 38 }, { id = "salamander", chance = 12 } },
+	},
+} :: { Types.EggDef }
+
+-- Rolled on every hatch, odds shown on the egg screen. Sums to 100.
+GameConfig.PetSizes = {
+	{ id = "normal", name = "Normal", chance = 88, scale = 1, mult = 1 },
+	{ id = "big", name = "Big", chance = 10, scale = 1.35, mult = 1.25 },
+	{ id = "huge", name = "Huge", chance = 2, scale = 1.8, mult = 1.6 },
+} :: { Types.PetSize }
+
+GameConfig.DuplicateRefund = 1 / 3 -- of the egg price, so repeat rolls never feel like nothing
 
 -- Skins are cosmetic. Relic prices only; the Drill Skins gamepass unlocks all.
 GameConfig.Skins = {
@@ -271,6 +344,7 @@ GameConfig.RateLimits = {
 	ClaimCollection = { capacity = 3, refill = 1 },
 	OpenEgg = { capacity = 2, refill = 0.5 },
 	Equip = { capacity = 4, refill = 2 },
+	SaveSettings = { capacity = 2, refill = 0.5 },
 }
 
 GameConfig.Data = {
