@@ -33,6 +33,8 @@ local waitingForGround = false
 local groundDeadline = 0
 local lastTickStep = -1
 local pendingSince: { [number]: number } = {}
+local holdSent = false
+local nextMoodCheck = 0
 
 DigController.onProgress = Signal.new() :: Signal.Signal<number>
 DigController.onDepth = Signal.new() :: Signal.Signal<number>
@@ -137,6 +139,11 @@ end
 
 local function step(dt: number)
 	local wants = wantsToDig() and canDig()
+	if wants ~= holdSent then
+		-- Cosmetic only (other players' drill spin); the server rate-limits it.
+		holdSent = wants
+		ClientState.send("DigHold", wants)
+	end
 	SFX.loop("DigLoop", wants and not waitingForGround)
 	if not wants then
 		if progress > 0 then
@@ -172,7 +179,7 @@ local function step(dt: number)
 	end
 end
 
-local function onDigResult(index: number, accepted: boolean, _roll: Types.BlockRoll?, serverDepth: number)
+local function onDigResult(index: number, accepted: boolean, _roll: Types.BlockRoll?, serverDepth: number, _oreKept: boolean)
 	pendingSince[index] = nil
 	if accepted then
 		if serverDepth > localDepth then
@@ -224,6 +231,13 @@ function DigController.init()
 				pendingSince[index] = nil
 				resync(ClientState.number("Depth", 0))
 			end
+		end
+		-- Lighting follows where the character actually is, so riding up or
+		-- respawning brings back the sunny surface (and riding down restores
+		-- the layer mood silently instead of on the next dig).
+		if now >= nextMoodCheck and not ClientState.isTraveling() then
+			nextMoodCheck = now + 0.25
+			LayerFX.setDepth(if ClientState.atSurface() then 0 else localDepth)
 		end
 	end)
 end
