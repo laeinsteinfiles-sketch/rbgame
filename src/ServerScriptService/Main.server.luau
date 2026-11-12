@@ -1,7 +1,8 @@
 --!strict
 -- Explorer: ServerScriptService/Main (Script)
--- Boot order matters: remotes first, data second, world third, then the
--- gameplay services that listen to remotes, and the round loop last.
+-- Boot order matters: remotes first, data second, the world and plots
+-- third, then the gameplay services that listen to remotes, and the round
+-- loop last (it pivots characters onto plots that must already exist).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,6 +13,7 @@ local Services = script.Parent.Services
 
 Remotes.init()
 require(Services.DataService).init()
+require(Services.WorldService).init()
 require(Services.PlotService).init()
 require(Services.RoundState).init()
 require(Services.MetaService).init()

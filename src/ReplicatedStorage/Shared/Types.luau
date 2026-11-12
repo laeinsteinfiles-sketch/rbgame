@@ -32,9 +32,13 @@ export type LayerDef = {
 	groundColor: string,
 	wallColor: string,
 	accentColor: string,
+	pocketChance: number, -- chance a free-fall pocket starts at any block
+	blastChance: number, -- chance any block is a blast charge
 	mood: LayerMood,
 	ores: { OreWeight },
 }
+
+export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic"
 
 export type OreDef = {
 	id: string,
@@ -43,6 +47,7 @@ export type OreDef = {
 	color: string,
 	material: string,
 	rarity: number, -- 1 (common) .. 5 (legendary); drives juice intensity
+	shape: "chunk" | "nugget" | "crystal",
 }
 
 export type MutationDef = {
@@ -65,9 +70,27 @@ export type QuestDef = {
 export type PetDef = {
 	id: string,
 	name: string,
-	tier: string,
+	tier: Rarity,
 	gemBonus: number,
 	color: string,
+	flyer: boolean,
+}
+
+export type PetSize = {
+	id: string,
+	name: string,
+	chance: number, -- percent
+	scale: number,
+	mult: number, -- multiplies the pet's gem bonus
+}
+
+export type EggDef = {
+	id: string,
+	name: string,
+	cost: number,
+	shell: string,
+	spots: string,
+	pets: { { id: string, chance: number } }, -- percent, sums to 100
 }
 
 export type SkinDef = {
