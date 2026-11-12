@@ -1,8 +1,6 @@
 --!strict
 -- Explorer: ReplicatedStorage/Config/Credits (ModuleScript)
 -- Shown verbatim on the in-game Credits screen. Keep in sync with ASSETS.md.
--- game-icons.net (CC BY 3.0) requires visible attribution, which is why this
--- screen exists.
 
 export type CreditEntry = {
 	title: string,
@@ -13,34 +11,28 @@ export type CreditEntry = {
 
 local Credits: { CreditEntry } = {
 	{
-		title = "UI icons",
-		author = "Lorc, Delapouite and contributors at game-icons.net",
-		licence = "CC BY 3.0",
-		url = "https://game-icons.net",
+		title = "Sound effects",
+		author = "Roblox Audio Library and Pro Sound Effects (see ASSETS.md)",
+		licence = "Licensed for Roblox experiences",
+		url = "https://create.roblox.com/store/audio",
 	},
 	{
-		title = "UI panels and bars",
-		author = "Kenney (kenney.nl)",
-		licence = "CC0 1.0",
-		url = "https://kenney.nl/assets/ui-pack",
+		title = "Music",
+		author = "APM Music and Roblox (see ASSETS.md)",
+		licence = "Licensed for Roblox experiences",
+		url = "https://create.roblox.com/store/audio",
 	},
 	{
-		title = "Props and pets",
-		author = "Quaternius / Kenney (see ASSETS.md)",
-		licence = "CC0 1.0",
-		url = "https://quaternius.com",
+		title = "Fonts",
+		author = "Fredoka One, Luckiest Guy (bundled with Roblox)",
+		licence = "Open font licences",
+		url = "https://fonts.google.com",
 	},
 	{
 		title = "ProfileStore",
 		author = "loleris (Mad Studio)",
 		licence = "Apache 2.0",
 		url = "https://github.com/MadStudioRoblox/ProfileStore",
-	},
-	{
-		title = "Audio",
-		author = "Roblox Creator Store (see ASSETS.md for each track)",
-		licence = "Creator Store terms",
-		url = "https://create.roblox.com/store",
 	},
 }
 

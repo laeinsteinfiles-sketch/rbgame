@@ -1,8 +1,9 @@
 --!strict
 -- Explorer: StarterGui/DigUI/Components/Panel (ModuleScript)
--- Dark slate panel with the 2px lighter outline. Uses the 9-slice sprite once
--- AssetIds.UI.PanelSlice is sourced; until then a rounded Frame with the
--- same colours, so layouts are identical either way.
+-- Panel styles: "window" (charcoal with a thick ink border, menus and
+-- sheets), "card" (lighter charcoal plate inside a window, or a saturated
+-- rarity plate when tinted), "dark" (translucent HUD pill over the world).
+-- Uses the 9-slice sprite if AssetIds.UI.PanelSlice is ever sourced.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,6 +13,8 @@ local Base = require(script.Parent.Base)
 
 local Panel = {}
 
+export type Style = "window" | "light" | "card" | "dark"
+
 export type Props = {
 	parent: Instance,
 	name: string?,
@@ -19,41 +22,76 @@ export type Props = {
 	position: UDim2?,
 	anchor: Vector2?,
 	padding: number?,
-	inset: boolean?, -- darker well for bars/lists inside another panel
+	inset: boolean?, -- legacy alias for style = "card"
+	style: Style?,
+	tint: Color3?, -- card only: a saturated plate in this colour
 	layoutOrder: number?,
+	zIndex: number?,
 }
 
-function Panel.new(props: Props): GuiObject
-	local color = if props.inset then UITheme.Colors.PanelInset else UITheme.Colors.Panel
-	local panel: GuiObject
-	if AssetIds.isSet(AssetIds.UI.PanelSlice) and not props.inset then
-		local image = Instance.new("ImageLabel")
-		image.Image = AssetIds.image(AssetIds.UI.PanelSlice)
-		image.ScaleType = Enum.ScaleType.Slice
-		image.SliceCenter = AssetIds.UI.PanelSliceCenter
-		image.ImageColor3 = color
-		image.BackgroundTransparency = 1
-		panel = image
-	else
-		local frame = Instance.new("Frame")
-		frame.BackgroundColor3 = color
-		Base.corner(frame)
-		if not props.inset then
-			Base.stroke(frame)
+function Panel.new(props: Props): Frame
+	local style: Style = props.style or (if props.inset then "card" else "window")
+	local frame = Instance.new("Frame")
+	frame.BorderSizePixel = 0
+	frame.Name = props.name or "Panel"
+	frame.Size = props.size
+	frame.Position = props.position or UDim2.new()
+	frame.AnchorPoint = props.anchor or Vector2.zero
+	frame.LayoutOrder = props.layoutOrder or 0
+	frame.ZIndex = props.zIndex or 1
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+
+	if style == "window" or style == "light" then
+		Base.gradient(frame, UITheme.Colors.PanelTop, UITheme.Colors.PanelBottom)
+		Base.corner(frame, 18)
+		Base.stroke(frame, UITheme.Colors.Ink, UITheme.Stroke)
+		if AssetIds.isSet(AssetIds.UI.PanelSlice) then
+			local image = Instance.new("ImageLabel")
+			image.Name = "Slice"
+			image.Size = UDim2.fromScale(1, 1)
+			image.BackgroundTransparency = 1
+			image.Image = AssetIds.image(AssetIds.UI.PanelSlice)
+			image.ScaleType = Enum.ScaleType.Slice
+			image.SliceCenter = AssetIds.UI.PanelSliceCenter
+			image.ZIndex = frame.ZIndex
+			image.Parent = frame
 		end
-		panel = frame
+	elseif style == "card" then
+		local tint = props.tint
+		if tint then
+			local h, s, v = tint:ToHSV()
+			Base.gradient(frame, Color3.fromHSV(h, s * 0.75, math.min(1, v + 0.18)), Color3.fromHSV(h, math.min(1, s * 1.05), v * 0.82))
+		else
+			Base.gradient(frame, UITheme.Colors.Card, UITheme.Colors.CardBottom)
+		end
+		Base.corner(frame, 12)
+		Base.stroke(frame, UITheme.Colors.Ink, 3)
+	else
+		frame.BackgroundColor3 = UITheme.Colors.Shade
+		frame.BackgroundTransparency = 0.2
+		Base.corner(frame)
+		Base.stroke(frame, UITheme.Colors.Ink, 3)
 	end
-	panel.Name = props.name or "Panel"
-	panel.Size = props.size
-	panel.Position = props.position or UDim2.new()
-	panel.AnchorPoint = props.anchor or Vector2.zero
-	panel.BorderSizePixel = 0
-	panel.LayoutOrder = props.layoutOrder or 0
+
 	if props.padding ~= 0 then
-		Base.padding(panel, props.padding)
+		Base.padding(frame, props.padding)
 	end
-	panel.Parent = props.parent
-	return panel
+	frame.Parent = props.parent
+	return frame
+end
+
+--- Re-tints a card made by Panel.new (nil returns it to the neutral plate).
+function Panel.setTint(frame: Frame, tint: Color3?)
+	local gradient = frame:FindFirstChildOfClass("UIGradient")
+	if not gradient then
+		return
+	end
+	if tint then
+		local h, s, v = tint:ToHSV()
+		gradient.Color = ColorSequence.new(Color3.fromHSV(h, s * 0.75, math.min(1, v + 0.18)), Color3.fromHSV(h, math.min(1, s * 1.05), v * 0.82))
+	else
+		gradient.Color = ColorSequence.new(UITheme.Colors.Card, UITheme.Colors.CardBottom)
+	end
 end
 
 return Panel
