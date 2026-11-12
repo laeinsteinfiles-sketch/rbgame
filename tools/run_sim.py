@@ -18,6 +18,7 @@ MODULES = {
     "ReplicatedStorage/Shared/Layers": "src/ReplicatedStorage/Shared/Layers.luau",
     "ReplicatedStorage/Shared/Economy": "src/ReplicatedStorage/Shared/Economy.luau",
     "ReplicatedStorage/Shared/OreGen": "src/ReplicatedStorage/Shared/OreGen.luau",
+    "ReplicatedStorage/Shared/Course": "src/ReplicatedStorage/Shared/Course.luau",
     "ServerStorage/EconomySim": "tools/EconomySim.luau",
 }
 
@@ -80,6 +81,7 @@ local deps = {{
     Layers = require(node("ReplicatedStorage/Shared/Layers")),
     Economy = require(node("ReplicatedStorage/Shared/Economy")),
     OreGen = require(node("ReplicatedStorage/Shared/OreGen")),
+    Course = require(node("ReplicatedStorage/Shared/Course")),
 }}
 require(node("ServerStorage/EconomySim")).run(deps, {{ seeds = {args.seeds}, policy = {args.policy!r} }})
 """
