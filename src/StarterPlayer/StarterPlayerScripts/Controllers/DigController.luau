@@ -127,6 +127,10 @@ local function commitDig(index: number)
 	if LayerFX.setDepth(index) then
 		SFX.play("LayerEnter", { volume = 0.7 })
 	end
+	if index >= GameConfig.CoreDepth then
+		SFX.play("CoreReached", { volume = 1 })
+		LayerFX.shake(0.6, 0.8)
+	end
 	DigController.onDepth:Fire(index)
 	DigController.onProgress:Fire(0)
 end

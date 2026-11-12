@@ -33,7 +33,6 @@ Remotes.ServerToClient = {
 	"QuestSync", -- (dayNumber, progress, claimed)
 	"EggResult", -- (petId, duplicate)
 	"MegaEvent", -- ("start" | "end" | "goal", index)
-	"LayerFlash", -- (layerIndex) when the server confirms a new layer
 }
 
 local FOLDER_NAME = "Remotes"

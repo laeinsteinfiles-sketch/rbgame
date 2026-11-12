@@ -11,40 +11,27 @@ local AssetIds = {}
 AssetIds.UI = {
 	PanelSlice = 0, -- 9-slice dark panel, see ASSETS.md "UI panels"
 	PanelSliceCenter = Rect.new(24, 24, 40, 40), -- slice centre for PanelSlice; adjust to the sprite
-	ButtonSlice = 0,
-	ButtonSliceCenter = Rect.new(16, 16, 32, 32),
-	BarTrack = 0,
-	BarFill = 0,
-	BarSliceCenter = Rect.new(8, 8, 16, 16),
 }
 
 -- One icon set only (game-icons.net, CC BY 3.0, credited in the Credits screen).
+-- Every slot here is consumed by a screen; add a slot only with its use.
 AssetIds.Icons = {
-	Depth = 0, -- "arrow down" / "plain arrow"
+	Depth = 0, -- "plain arrow"
 	Cash = 0, -- "coins"
 	Gem = 0, -- "cut diamond"
-	Relic = 0, -- "ancient ruins" or "scroll unfurled"
 	Backpack = 0, -- "knapsack"
 	Drill = 0, -- "drill"
 	Shop = 0, -- "shop"
 	Book = 0, -- "book cover"
 	Quest = 0, -- "scroll quill"
 	Trophy = 0, -- "trophy cup"
-	Crown = 0, -- "crown"
 	Settings = 0, -- "cog"
 	Close = 0, -- "cancel"
-	Lock = 0, -- "padlock"
-	Check = 0, -- "check mark"
 	Sell = 0, -- "cash"
 	Up = 0, -- "upload" style arrow
 	Down = 0, -- "download" style arrow
-	Pet = 0, -- "paw print"
-	Skin = 0, -- "paint brush"
 	Mega = 0, -- "lightning trio"
-	Timer = 0, -- "stopwatch"
-	Info = 0, -- "info"
 	Egg = 0, -- "egg"
-	CatchUp = 0, -- "sprint"
 	Ore = {
 		coal = 0, -- "coal wagon" / "rock"
 		copper = 0, -- "ore"
@@ -64,7 +51,6 @@ AssetIds.Textures = {
 	topsoil = { Top = 0, Side = 0, MaterialVariant = "" },
 	bedrock = { Top = 0, Side = 0, MaterialVariant = "" },
 	hollows = { Top = 0, Side = 0, MaterialVariant = "" },
-	core = { Glow = 0 },
 }
 
 -- Engine-shipped textures are safe to reference by rbxasset path; they are
@@ -105,9 +91,6 @@ AssetIds.Sounds = {
 -- are filled, which is a known placeholder (see ASSETS.md "Meshes").
 AssetIds.Meshes = {
 	Drill = 0,
-	OreNugget = 0,
-	Relic = 0,
-	CoreCrystal = 0,
 	Pets = {
 		mole = 0,
 		beetle = 0,

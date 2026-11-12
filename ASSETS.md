@@ -13,19 +13,20 @@ Rules in force: 3D only from the Creator Store or CC0/permissive packs
 
 | Group | Slots | Sourced |
 |---|---|---|
-| UI 9-slices | 4 | 0 |
-| Icons (game-icons.net) | 32 | 0 |
+| UI 9-slice panel | 1 | 0 |
+| Icons (game-icons.net) | 23 | 0 |
 | Layer textures (your 204-material pack) | 3 layers | 0 — waiting on the material list |
 | Sounds (Creator Store) | 23 | 0 |
-| Meshes (Creator Store / Quaternius / Kenney) | 11 | 0 |
+| Meshes (Creator Store / Quaternius / Kenney) | 8 | 0 |
 | Gamepass ids (Creator Dashboard) | 4 | 0 |
 
-Until sourced the game draws rounded frames instead of 9-slices, hides icon
-slots (layouts do not shift), stays silent on unset sounds (warned once at
+Every slot is consumed by code; there are no speculative slots. Until sourced
+the game draws rounded frames instead of the 9-slice, hides icon slots
+(layouts do not shift), stays silent on unset sounds (warned once at
 startup), and uses part-built drill / pet / ore stand-ins. These stand-ins
 are placeholders, not final art.
 
-## UI panels and bars (CC0)
+## UI panel (CC0)
 
 Source: Kenney UI Pack (https://kenney.nl/assets/ui-pack) or Kenney UI Pack
 Space Expansion. Upload the grey 9-slice panel and recolour in code
@@ -34,8 +35,6 @@ Space Expansion. Upload the grey 9-slice panel and recolour in code
 | Slot | Search term in pack | Notes |
 |---|---|---|
 | `UI.PanelSlice` | `panel_grey` / `grey_panel` | set `PanelSliceCenter` to the sprite's border |
-| `UI.ButtonSlice` | `grey_button` | |
-| `UI.BarTrack`, `UI.BarFill` | `bar_round` / `barHorizontal_*` | |
 
 Licence CC0 1.0, no credit required (credited anyway on the Credits screen).
 
@@ -49,27 +48,18 @@ uploaded as decals. The code recolours with `ImageColor3`.
 | `Icons.Depth` | "plain arrow" (rotate down) |
 | `Icons.Cash` | "coins" |
 | `Icons.Gem` | "cut diamond" |
-| `Icons.Relic` | "scroll unfurled" or "ancient ruins" |
 | `Icons.Backpack` | "knapsack" |
 | `Icons.Drill` | "drill" |
 | `Icons.Shop` | "shop" |
 | `Icons.Book` | "book cover" |
 | `Icons.Quest` | "scroll quill" |
 | `Icons.Trophy` | "trophy cup" |
-| `Icons.Crown` | "crown" |
 | `Icons.Settings` | "cog" |
 | `Icons.Close` | "cancel" |
-| `Icons.Lock` | "padlock" |
-| `Icons.Check` | "check mark" |
 | `Icons.Sell` | "cash" |
 | `Icons.Up` / `Icons.Down` | "upload" / "download" |
-| `Icons.Pet` | "paw print" |
-| `Icons.Skin` | "paint brush" |
 | `Icons.Mega` | "lightning trio" |
-| `Icons.Timer` | "stopwatch" |
-| `Icons.Info` | "info" |
 | `Icons.Egg` | "egg" |
-| `Icons.CatchUp` | "sprint" |
 | `Icons.Ore.coal` | "coal wagon" or "rock" |
 | `Icons.Ore.copper/iron/silver/gold` | "ore" (recoloured per ore in code) |
 | `Icons.Ore.sapphire/ruby` | "cut diamond" / "emerald" |
@@ -133,10 +123,11 @@ terms; note any creator-requested credit here.
 | Slot | Suggested source | Search / file | Licence |
 |---|---|---|---|
 | `Meshes.Drill` | Creator Store (free models → mesh only) or Kenney "Tools" kit | "drill", "power drill lowpoly" | per listing / CC0 |
-| `Meshes.OreNugget` | Quaternius "Ultimate Stylized Nature" / Kenney "Rocks" | "crystal", "rock small" | CC0 |
-| `Meshes.Relic` | Kenney "Fantasy Props" | "tablet", "rune stone" | CC0 |
-| `Meshes.CoreCrystal` | Quaternius "Crystals" | "crystal cluster" | CC0 |
 | `Meshes.Pets.*` | Quaternius "Ultimate Animated Animals" / Poly Pizza (CC0 filter) | mole, beetle, gecko, bat, crab, owl, salamander | CC0 |
+
+Ore nuggets, relics and the core are part-built on purpose (chunky
+silhouettes, recoloured per ore); add mesh slots only if a sourced mesh
+reads better at phone size.
 
 Until these are filled the drill, pets and ore are part-built stand-ins
 (`DrillRig`, `ShaftRenderer`). They are deliberately chunky and readable but
