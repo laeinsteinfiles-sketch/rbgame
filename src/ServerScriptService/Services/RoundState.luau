@@ -22,7 +22,7 @@ export type PlayerRound = {
 	packTier: number,
 	backpack: Types.Backpack,
 	packUsed: number,
-	seed: number,
+	lootSeed: number,
 	lastDigAt: number,
 	lastPower: number,
 	violations: number,
@@ -33,13 +33,22 @@ export type PlayerRound = {
 	travelingUntil: number,
 	lastTravelAt: number,
 	reachedCore: boolean,
+	coreTime: number?,
+	nearCoreCalled: boolean,
 }
 
 RoundState.phase = "Lobby" :: "Lobby" | "Countdown" | "Active" | "Results"
 RoundState.megaActive = false
+-- One course per round shared by everyone: the race is the same shaft.
+RoundState.courseSeed = 1
+RoundState.activeSince = 0
 
 local rng = Random.new()
 local states: { [Player]: PlayerRound } = {}
+
+function RoundState.newCourse()
+	RoundState.courseSeed = rng:NextInteger(1, 2 ^ 31 - 1)
+end
 
 function RoundState.get(player: Player): PlayerRound?
 	return states[player]
@@ -87,7 +96,9 @@ function RoundState.replicate(player: Player)
 	player:SetAttribute("PackCap", RoundState.packCapacity(player))
 	player:SetAttribute("DigPower", RoundState.power(player))
 	player:SetAttribute("CatchUp", state.catchUp)
-	player:SetAttribute("Seed", state.seed)
+	-- Both seeds travel in one attribute so the client never renders a
+	-- course from one round with loot from another.
+	player:SetAttribute("RoundKey", `{RoundState.courseSeed}:{state.lootSeed}`)
 end
 
 function RoundState.syncBackpack(player: Player)
@@ -105,7 +116,7 @@ function RoundState.reset(player: Player, startingPackTier: number)
 		packTier = startingPackTier,
 		backpack = {},
 		packUsed = 0,
-		seed = rng:NextInteger(1, 2 ^ 31 - 1),
+		lootSeed = rng:NextInteger(1, 2 ^ 31 - 1),
 		lastDigAt = 0,
 		lastPower = 0,
 		violations = 0,
@@ -116,6 +127,8 @@ function RoundState.reset(player: Player, startingPackTier: number)
 		travelingUntil = 0,
 		lastTravelAt = 0,
 		reachedCore = false,
+		coreTime = nil,
+		nearCoreCalled = false,
 	}
 	RoundState.replicate(player)
 	RoundState.syncBackpack(player)
