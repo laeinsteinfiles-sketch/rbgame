@@ -85,6 +85,17 @@ AssetIds.Sounds = {
 	ElevatorMove = 0, -- cable/motor whir
 	EggCrack = 0, -- crack + sparkle
 	CoreReached = 0, -- big resonant hit
+	PocketFall = 0, -- hollow whoosh when breaking into a free-fall pocket
+	Blast = 0, -- punchy explosion with debris tail
+	FuseHiss = 0, -- short fuse sizzle on standing over a blast charge
+	ChestOpen = 0, -- wooden creak + coin spill
+	LeadChange = 0, -- crowd "ooh" / race horn stab for overtakes
+	NearCore = 0, -- tense riser when someone closes in on the core
+	FinalMinute = 0, -- clock tick-tock sting
+	MegaWarn = 0, -- rising alarm, 10 s before a Mega Drill
+	HatchWobble = 0, -- egg rattle, layered for each wobble
+	HatchReveal = 0, -- bright reveal sting (pitched up for rarer pets)
+	Whoosh = 0, -- UI panel swoosh in/out
 }
 
 -- Creator Store meshes. The game draws chunky part-built stand-ins until these

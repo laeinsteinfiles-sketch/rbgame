@@ -1,13 +1,16 @@
 --!strict
 -- Explorer: ServerScriptService/Services/DigService (ModuleScript)
 -- The only way depth changes. Validates every DigRequest in a fixed order:
--- rate limit -> shape -> phase -> sequence -> travel -> position -> timing.
+-- rate limit -> shape -> phase -> sequence -> travel -> position -> timing,
+-- then resolves the dig against the shared course (blasts clear blocks,
+-- pockets drop you for free, chests pay out) and applies per-player loot.
 -- Rejections resync the client; only cheat-shaped failures count as violations.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Config.GameConfig)
+local Course = require(ReplicatedStorage.Shared.Course)
 local Economy = require(ReplicatedStorage.Shared.Economy)
 local Layers = require(ReplicatedStorage.Shared.Layers)
 local OreGen = require(ReplicatedStorage.Shared.OreGen)
@@ -37,13 +40,9 @@ local function violation(player: Player, state: RoundState.PlayerRound, reason: 
 end
 
 local function reject(player: Player, state: RoundState.PlayerRound, index: number, snapPosition: boolean)
-	Remotes.get("DigResult"):FireClient(player, index, false, nil, state.depth)
+	Remotes.get("DigResult"):FireClient(player, index, false, state.depth)
 	if snapPosition then
-		local character = player.Character
-		local cf = PlotService.standingCFrame(player, state.depth)
-		if character and cf then
-			character:PivotTo(cf)
-		end
+		PlotService.pivot(player, PlotService.standingCFrame(player, state.depth))
 	end
 end
 
@@ -61,6 +60,29 @@ local function positionOk(player: Player, depth: number): boolean
 	local dx = math.abs(root.Position.X - plot.center.X)
 	local dz = math.abs(root.Position.Z - plot.center.Z)
 	return dy <= D.MaxPositionErrorBlocks * G.BlockHeight and dx <= G.BlockSize and dz <= G.BlockSize
+end
+
+local function addOre(player: Player, state: RoundState.PlayerRound, oreId: string, mutationId: string, now: number): boolean
+	if state.packUsed >= RoundState.packCapacity(player) then
+		if now - (lastPackFullNotice[player] or 0) > 3 then
+			lastPackFullNotice[player] = now
+			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full! Ride up to sell")
+		end
+		return false
+	end
+	local perOre = state.backpack[oreId]
+	if not perOre then
+		perOre = {}
+		state.backpack[oreId] = perOre
+	end
+	perOre[mutationId] = (perOre[mutationId] or 0) + 1
+	state.packUsed += 1
+	MetaService.recordCollect(player, oreId, mutationId)
+	QuestService.add(player, "collect", 1, oreId)
+	if mutationId ~= "none" then
+		QuestService.add(player, "mutation", 1)
+	end
+	return true
 end
 
 local function onDigRequest(player: Player, index: any)
@@ -103,62 +125,64 @@ local function onDigRequest(player: Player, index: any)
 		reject(player, state, index, false)
 		return
 	end
-
-	state.depth = index
 	state.lastDigAt = now
 	state.lastPower = powerNow
-	state.dugThisRound += 1
-	if RoundState.megaActive then
-		state.megaDug += 1
-		RoundService.addMegaProgress(1)
-		QuestService.add(player, "mega", 1)
-	end
-	QuestService.add(player, "dig", 1)
-	QuestService.raise(player, "depth", index)
 
-	local data = DataService.get(player)
-	if data and index > data.stats.maxDepth then
-		data.stats.maxDepth = index
-	end
-
-	local roll = OreGen.roll(state.seed, index)
+	local resolution = Course.resolve(RoundState.courseSeed, index)
 	local oreAdded = false
-	if roll.oreId then
-		local mutationId = roll.mutationId or "none"
-		if state.packUsed < RoundState.packCapacity(player) then
-			local perOre = state.backpack[roll.oreId]
-			if not perOre then
-				perOre = {}
-				state.backpack[roll.oreId] = perOre
-			end
-			perOre[mutationId] = (perOre[mutationId] or 0) + 1
-			state.packUsed += 1
-			oreAdded = true
-			MetaService.recordCollect(player, roll.oreId, mutationId)
-			QuestService.add(player, "collect", 1, roll.oreId)
-			if mutationId ~= "none" then
-				QuestService.add(player, "mutation", 1)
-			end
-		elseif now - (lastPackFullNotice[player] or 0) > 3 then
-			lastPackFullNotice[player] = now
-			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full — ore left behind")
+	local solidBroken = 0
+	for _, broken in resolution.broken do
+		if broken.kind == "pocket" then
+			QuestService.add(player, "pocket", 1)
+			continue
+		end
+		solidBroken += 1
+		if broken.kind == "blast" and broken.index == index then
+			QuestService.add(player, "blast", 1)
+		elseif broken.kind == "chest" then
+			local amount = Course.chestCash(broken.index)
+			state.cash += amount
+			state.cashEarned += amount
+			QuestService.add(player, "chest", 1)
+			Remotes.get("Notify"):FireClient(player, "chest", `Treasure! +${amount}`)
+		end
+		local roll = OreGen.roll(state.lootSeed, broken.index)
+		if roll.oreId then
+			oreAdded = addOre(player, state, roll.oreId, roll.mutationId or "none", now) or oreAdded
+		end
+		if roll.relic then
+			MetaService.addRelic(player, 1)
+			Remotes.get("Notify"):FireClient(player, "relic", "Relic found")
 		end
 	end
-	if roll.relic then
-		MetaService.addRelic(player, 1)
-		Remotes.get("Notify"):FireClient(player, "relic", "Relic found")
+
+	local before = state.depth
+	state.depth = resolution.finalDepth
+	state.dugThisRound += solidBroken
+	if RoundState.megaActive then
+		state.megaDug += solidBroken
+		RoundService.addMegaProgress(solidBroken)
+		QuestService.add(player, "mega", solidBroken)
+	end
+	QuestService.add(player, "dig", solidBroken)
+	QuestService.raise(player, "depth", state.depth)
+
+	local data = DataService.get(player)
+	if data and state.depth > data.stats.maxDepth then
+		data.stats.maxDepth = state.depth
 	end
 
 	RoundState.replicate(player)
 	if oreAdded then
 		RoundState.syncBackpack(player)
 	end
-	Remotes.get("DigResult"):FireClient(player, index, true, roll, state.depth)
+	Remotes.get("DigResult"):FireClient(player, index, true, state.depth)
 
-	if Layers.indexAt(index) ~= Layers.indexAt(index - 1) then
-		Remotes.get("Notify"):FireClient(player, "layer", Layers.layerAt(index).name)
+	if Layers.indexAt(state.depth) ~= Layers.indexAt(before) then
+		Remotes.get("Notify"):FireClient(player, "layer", Layers.layerAt(state.depth).name)
 	end
-	if index >= GameConfig.CoreDepth then
+	RoundService.onDepthChanged(player, state.depth)
+	if state.depth >= GameConfig.CoreDepth then
 		state.reachedCore = true
 		RoundService.coreReached(player)
 	end

@@ -1,0 +1,609 @@
+{
+ "parts": [
+  {
+   "name": "Baseplate",
+   "shape": "Block",
+   "size": [
+    40,
+    1,
+    28
+   ],
+   "cframe": [
+    0,
+    -0.5,
+    0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.2902,
+    0.251,
+    0.2157
+   ],
+   "transparency": 0.0,
+   "material": "Slate"
+  },
+  {
+   "name": "Block",
+   "shape": "Block",
+   "size": [
+    4,
+    4,
+    4
+   ],
+   "cframe": [
+    -13,
+    2,
+    -7,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.7882,
+    0.2784,
+    0.2392
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Wedge",
+   "shape": "Wedge",
+   "size": [
+    4,
+    4,
+    6
+   ],
+   "cframe": [
+    -6.5,
+    2,
+    -7,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.2471,
+    0.498,
+    0.8157
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Cylinder (axis X)",
+   "shape": "Cylinder",
+   "size": [
+    6,
+    3,
+    3
+   ],
+   "cframe": [
+    0.5,
+    1.5,
+    -7,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.2471,
+    0.7137,
+    0.4157
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Ball",
+   "shape": "Ball",
+   "size": [
+    4,
+    4,
+    4
+   ],
+   "cframe": [
+    7.5,
+    2,
+    -7,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.949,
+    0.702,
+    0.2392
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Half-transparent block",
+   "shape": "Block",
+   "size": [
+    4,
+    4,
+    4
+   ],
+   "cframe": [
+    13.5,
+    2,
+    -7,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.9098,
+    0.902,
+    0.9412
+   ],
+   "transparency": 0.5,
+   "material": "Plastic"
+  },
+  {
+   "name": "Wedge turned 90 about Y",
+   "shape": "Wedge",
+   "size": [
+    4,
+    3,
+    6
+   ],
+   "cframe": [
+    -13,
+    1.5,
+    3,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.3569,
+    0.5529,
+    0.8392
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Wedge upside down",
+   "shape": "Wedge",
+   "size": [
+    4,
+    3,
+    6
+   ],
+   "cframe": [
+    -6.5,
+    1.5,
+    3,
+    -1.0,
+    -0.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.549,
+    0.4196,
+    0.8392
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Wedge ramp onto ledge",
+   "shape": "Wedge",
+   "size": [
+    4,
+    3,
+    5
+   ],
+   "cframe": [
+    0.5,
+    1.5,
+    1.5,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.8392,
+    0.5412,
+    0.2471
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Ledge",
+   "shape": "Block",
+   "size": [
+    4,
+    3,
+    4
+   ],
+   "cframe": [
+    0.5,
+    1.5,
+    6,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.6118,
+    0.4784,
+    0.3333
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Upright cylinder",
+   "shape": "Cylinder",
+   "size": [
+    7,
+    2.4,
+    2.4
+   ],
+   "cframe": [
+    7.5,
+    3.5,
+    3,
+    0.0,
+    -1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.749,
+    0.7725,
+    0.8
+   ],
+   "transparency": 0.0,
+   "material": "Metal"
+  },
+  {
+   "name": "Neon cap",
+   "shape": "Ball",
+   "size": [
+    1.8,
+    1.8,
+    1.8
+   ],
+   "cframe": [
+    7.5,
+    7.7,
+    3,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    1.0,
+    0.3098,
+    0.8471
+   ],
+   "transparency": 0.0,
+   "material": "Neon"
+  },
+  {
+   "name": "Cylinder along Z",
+   "shape": "Cylinder",
+   "size": [
+    6,
+    2,
+    2
+   ],
+   "cframe": [
+    13.5,
+    1,
+    3,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.2471,
+    0.7137,
+    0.6588
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Tilted cylinder",
+   "shape": "Cylinder",
+   "size": [
+    6,
+    1.2,
+    1.2
+   ],
+   "cframe": [
+    13.5,
+    3.6,
+    3,
+    0.742404,
+    -0.346189,
+    -0.573576,
+    0.422618,
+    0.906308,
+    0.0,
+    0.519837,
+    -0.242404,
+    0.819152
+   ],
+   "color": [
+    0.8784,
+    0.8902,
+    0.9098
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Neon strip",
+   "shape": "Block",
+   "size": [
+    30,
+    0.3,
+    0.3
+   ],
+   "cframe": [
+    0,
+    0.15,
+    -10.5,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.2471,
+    0.8784,
+    1.0
+   ],
+   "transparency": 0.0,
+   "material": "Neon"
+  },
+  {
+   "name": "Glass pane",
+   "shape": "Block",
+   "size": [
+    10,
+    6,
+    0.3
+   ],
+   "cframe": [
+    -9.5,
+    3,
+    9.5,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.6588,
+    0.8471,
+    0.9412
+   ],
+   "transparency": 0.0,
+   "material": "Glass"
+  },
+  {
+   "name": "Behind glass",
+   "shape": "Block",
+   "size": [
+    3,
+    3,
+    3
+   ],
+   "cframe": [
+    -9.5,
+    1.5,
+    12,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.7882,
+    0.2784,
+    0.2392
+   ],
+   "transparency": 0.0,
+   "material": "Plastic"
+  },
+  {
+   "name": "Neon light behind glass",
+   "shape": "Cylinder",
+   "size": [
+    8,
+    0.6,
+    0.6
+   ],
+   "cframe": [
+    -9.5,
+    5.4,
+    11.5,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    0.949,
+    0.702,
+    0.2392
+   ],
+   "transparency": 0.0,
+   "material": "Neon"
+  },
+  {
+   "name": "ForceField (skipped)",
+   "shape": "Block",
+   "size": [
+    6,
+    6,
+    6
+   ],
+   "cframe": [
+    8,
+    3,
+    10,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "transparency": 0.0,
+   "material": "ForceField"
+  },
+  {
+   "name": "Transparency 0.99 (skipped)",
+   "shape": "Block",
+   "size": [
+    6,
+    6,
+    6
+   ],
+   "cframe": [
+    8,
+    3,
+    10,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "color": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "transparency": 0.99,
+   "material": "Plastic"
+  }
+ ],
+ "lightDirection": [
+  0.4,
+  1,
+  -0.3
+ ]
+}
