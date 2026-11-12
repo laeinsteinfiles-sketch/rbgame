@@ -6,10 +6,12 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Config.GameConfig)
 local Economy = require(ReplicatedStorage.Shared.Economy)
+local Grid = require(ReplicatedStorage.Shared.Grid)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local DataService = require(script.Parent.DataService)
@@ -45,12 +47,13 @@ local function startingPackTier(player: Player): number
 	return if MetaService.ownsPass(player, "BigPack") then GameConfig.Meta.StarterPackTierWithPass else 1
 end
 
-local function resetPlayer(player: Player, ontoShaft: boolean)
+local function resetPlayer(player: Player, ontoMine: boolean)
 	RoundState.reset(player, startingPackTier(player))
-	if ontoShaft then
-		-- Everyone starts the race standing on their first block.
+	player:SetAttribute("Traveling", "")
+	if ontoMine then
+		-- Everyone starts the race standing on top of their own mine.
 		local character = player.Character
-		local cf = PlotService.standingCFrame(player, 0)
+		local cf = PlotService.cellCFrame(player, math.ceil(Grid.COLS / 2), 0)
 		if character and cf then
 			character:PivotTo(cf)
 		end
@@ -59,15 +62,36 @@ local function resetPlayer(player: Player, ontoShaft: boolean)
 	end
 end
 
-local function resetAll(ontoShaft: boolean)
+local function resetAll(ontoMine: boolean)
 	for _, player in Players:GetPlayers() do
-		resetPlayer(player, ontoShaft)
+		resetPlayer(player, ontoMine)
 	end
 end
 
 local function replicateAll()
 	for player in RoundState.all() do
 		RoundState.replicate(player)
+	end
+end
+
+local function makeLeaderstats(player: Player)
+	local stats = Instance.new("Folder")
+	stats.Name = "leaderstats"
+	local depth = Instance.new("IntValue")
+	depth.Name = "Depth"
+	depth.Parent = stats
+	local wins = Instance.new("IntValue")
+	wins.Name = "Wins"
+	wins.Parent = stats
+	stats.Parent = player
+end
+
+local function setWinsStat(player: Player)
+	local data = DataService.get(player)
+	local stats = player:FindFirstChild("leaderstats")
+	local wins = stats and stats:FindFirstChild("Wins")
+	if data and wins and wins:IsA("IntValue") then
+		wins.Value = data.stats.wins
 	end
 end
 
@@ -107,8 +131,8 @@ local function startMega(index: number, round: number)
 	task.delay(R.MegaDrill.Duration, endMega, index, round)
 end
 
-function RoundService.addMegaProgress(blocks: number)
-	megaProgress += blocks
+function RoundService.addMegaProgress(cells: number)
+	megaProgress += cells
 	megaDirty = true
 end
 
@@ -132,11 +156,17 @@ end
 -- Results --------------------------------------------------------------------
 
 local function finishRound()
-	local entries: { { player: Player, depth: number, dug: number } } = {}
+	local entries: { { player: Player, depth: number, dug: number, core: boolean, reachedAt: number } } = {}
 	for player, state in RoundState.all() do
-		table.insert(entries, { player = player, depth = state.depth, dug = state.dugThisRound })
+		table.insert(entries, { player = player, depth = state.depth, dug = state.dugThisRound, core = state.reachedCore, reachedAt = state.reachedAt })
 	end
 	table.sort(entries, function(a, b)
+		if a.core ~= b.core then
+			return a.core
+		end
+		if a.core and b.core and a.reachedAt ~= b.reachedAt then
+			return a.reachedAt < b.reachedAt
+		end
 		if a.depth ~= b.depth then
 			return a.depth > b.depth
 		end
@@ -152,15 +182,15 @@ local function finishRound()
 		local data = DataService.get(entry.player)
 		if data then
 			data.stats.rounds += 1
-			if placement == 1 then
+			if placement == 1 and entry.depth > 0 then
 				data.stats.wins += 1
 			end
 		end
+		setWinsStat(entry.player)
 		QuestService.add(entry.player, "rounds", 1)
 		local base = R.Gems.Placement[placement]
 			or (R.Gems.Participation + math.min(R.Gems.DepthGemCap, entry.depth // R.Gems.DepthPerGem))
-		local reason = if placement <= 3 then `Finished #{placement}` else "Round complete"
-		-- awardGems pushes the profile, which also carries the stats above.
+		local reason = if placement <= 3 then `Finished {placement}{if placement == 1 then "st" elseif placement == 2 then "nd" else "rd"}` else "Round complete"
 		gemsFor[entry.player] = MetaService.awardGems(entry.player, base, reason)
 		table.insert(standings, {
 			userId = entry.player.UserId,
@@ -194,9 +224,10 @@ local function runRound()
 	set("RoundNumber", roundNumber)
 	coreWinner = nil
 
-	setPhase("Lobby", R.LobbySeconds)
+	local lobby = if RunService:IsStudio() then R.StudioLobbySeconds else R.LobbySeconds
+	setPhase("Lobby", lobby)
 	resetAll(false)
-	task.wait(R.LobbySeconds)
+	task.wait(lobby)
 
 	setPhase("Countdown", R.CountdownSeconds)
 	task.wait(R.CountdownSeconds)
@@ -208,7 +239,17 @@ local function runRound()
 		task.delay(startTime, startMega, i, round)
 	end
 	local endAt = os.clock() + R.ActiveSeconds
-	while os.clock() < endAt and not coreWinner do
+	-- The first player to the core ends the round after a short grace so the
+	-- moment lands and anyone a few metres away can still make it.
+	local graceUntil: number? = nil
+	while os.clock() < endAt do
+		if coreWinner and not graceUntil then
+			graceUntil = os.clock() + 8
+			set("PhaseEndsAt", Workspace:GetServerTimeNow() + 8)
+		end
+		if graceUntil and os.clock() >= graceUntil then
+			break
+		end
 		task.wait(0.25)
 	end
 	if RoundState.megaActive then
@@ -234,12 +275,17 @@ function RoundService.init()
 	set("WinnerByCore", false)
 	folder.Parent = ReplicatedStorage
 
-	Players.PlayerAdded:Connect(function(player)
-		resetPlayer(player, false)
-	end)
-	for _, player in Players:GetPlayers() do
+	local function join(player: Player)
+		makeLeaderstats(player)
 		resetPlayer(player, false)
 	end
+	Players.PlayerAdded:Connect(join)
+	for _, player in Players:GetPlayers() do
+		join(player)
+	end
+	DataService.onLoaded:Connect(function(player)
+		setWinsStat(player)
+	end)
 
 	-- Pass ownership arrives after the profile; a fresh BigPack owner who has
 	-- not dug yet gets the starter pack applied late rather than never.

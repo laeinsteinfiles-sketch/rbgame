@@ -1,17 +1,23 @@
 --!strict
 -- Explorer: ServerScriptService/Services/DigService (ModuleScript)
--- The only way depth changes. Validates every DigRequest in a fixed order:
--- rate limit -> shape -> phase -> sequence -> travel -> position -> timing.
--- Rejections resync the client; only cheat-shaped failures count as violations.
+-- The only way cells open. Every DigRequest goes through DigRules.validate
+-- (shape -> phase -> state -> adjacency -> reach -> timing); rejections tell
+-- the client to restore that one cell, and only cheat-shaped failures count
+-- towards a kick. Accepted cells apply their contents here: ore into the
+-- backpack, chest cash, TNT blasts (with chain reactions), gem crystals,
+-- relics and the core itself.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Config.GameConfig)
+local CellGen = require(ReplicatedStorage.Shared.CellGen)
+local DigRules = require(ReplicatedStorage.Shared.DigRules)
 local Economy = require(ReplicatedStorage.Shared.Economy)
+local Grid = require(ReplicatedStorage.Shared.Grid)
 local Layers = require(ReplicatedStorage.Shared.Layers)
-local OreGen = require(ReplicatedStorage.Shared.OreGen)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Types = require(ReplicatedStorage.Shared.Types)
 local DataService = require(script.Parent.DataService)
 local MetaService = require(script.Parent.MetaService)
 local PlotService = require(script.Parent.PlotService)
@@ -22,8 +28,9 @@ local RoundState = require(script.Parent.RoundState)
 
 local DigService = {}
 
-local G = GameConfig.Geometry
 local D = GameConfig.Dig
+local S = GameConfig.Specials
+local MAX_BLAST_CELLS = 40
 
 local lastPackFullNotice: { [Player]: number } = {}
 
@@ -36,143 +43,216 @@ local function violation(player: Player, state: RoundState.PlayerRound, reason: 
 	end
 end
 
-local function reject(player: Player, state: RoundState.PlayerRound, index: number, snapPosition: boolean)
-	Remotes.get("DigResult"):FireClient(player, index, false, nil, state.depth)
-	if snapPosition then
-		local character = player.Character
-		local cf = PlotService.standingCFrame(player, state.depth)
-		if character and cf then
-			character:PivotTo(cf)
-		end
+local function feed(kind: string, player: Player, text: string)
+	Remotes.get("Feed"):FireAllClients(kind, player.DisplayName, text)
+end
+
+local function onNewDepth(player: Player, state: RoundState.PlayerRound, row: number)
+	local previous = state.depth
+	state.depth = row
+	QuestService.raise(player, "depth", row)
+	local data = DataService.get(player)
+	if data and row > data.stats.maxDepth then
+		data.stats.maxDepth = row
+	end
+	local before, after = Layers.indexAt(math.max(0, previous - 1)), Layers.indexAt(row - 1)
+	if after > before and row < GameConfig.CoreDepth then
+		local layer = Layers.get(after)
+		Remotes.get("Notify"):FireClient(player, "layer", layer.name)
+		feed("layer", player, `reached {layer.name}`)
+	end
+	while row >= state.nextMilestone and state.nextMilestone < GameConfig.CoreDepth do
+		Remotes.get("Notify"):FireClient(player, "milestone", `{state.nextMilestone} m`)
+		state.nextMilestone += GameConfig.Round.DepthMilestone
 	end
 end
 
---- True when the character is roughly where a player at `depth` should be.
-local function positionOk(player: Player, depth: number): boolean
-	local plot = PlotService.getPlot(player)
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not plot or not root or not root:IsA("BasePart") or not humanoid or humanoid.Health <= 0 then
+local function collectOre(player: Player, state: RoundState.PlayerRound, cell: Types.Cell): boolean
+	local oreId = cell.oreId
+	if not oreId then
 		return false
 	end
-	local expectedY = G.SurfaceY - depth * G.BlockHeight + 3
-	local dy = math.abs(root.Position.Y - expectedY)
-	local dx = math.abs(root.Position.X - plot.center.X)
-	local dz = math.abs(root.Position.Z - plot.center.Z)
-	return dy <= D.MaxPositionErrorBlocks * G.BlockHeight and dx <= G.BlockSize and dz <= G.BlockSize
+	local mutationId = cell.mutationId or "none"
+	if state.packUsed >= RoundState.packCapacity(player) then
+		local now = os.clock()
+		if now - (lastPackFullNotice[player] or 0) > 4 then
+			lastPackFullNotice[player] = now
+			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full! Ride the lift up to sell")
+		end
+		return false
+	end
+	local perOre = state.backpack[oreId]
+	if not perOre then
+		perOre = {}
+		state.backpack[oreId] = perOre
+	end
+	perOre[mutationId] = (perOre[mutationId] or 0) + 1
+	state.packUsed += 1
+	MetaService.recordCollect(player, oreId, mutationId)
+	QuestService.add(player, "collect", 1, oreId)
+	local ore = Economy.oreById[oreId]
+	local mutation = Economy.mutationById[mutationId]
+	if mutationId ~= "none" then
+		QuestService.add(player, "mutation", 1)
+	end
+	if ore and (ore.rarity >= 5 or (mutation and mutation.mult >= 8) or (ore.rarity >= 4 and mutationId ~= "none")) then
+		local name = if mutationId ~= "none" and mutation then `{mutation.name} {ore.name}` else ore.name
+		feed("rare", player, `found {name}!`)
+	end
+	return true
 end
 
-local function onDigRequest(player: Player, index: any)
-	local state = RoundState.get(player)
-	if not state then
-		return
-	end
-	if typeof(index) ~= "number" or index ~= index or index % 1 ~= 0 or index < 1 then
-		violation(player, state, "malformed index")
-		return
-	end
-	if RoundState.phase ~= "Active" or state.reachedCore then
-		reject(player, state, index, false)
-		return
-	end
-	-- Out-of-order indices are expected after any earlier rejection (the
-	-- client keeps predicting), so they resync without a violation.
-	if index ~= state.depth + 1 then
-		reject(player, state, index, false)
-		return
-	end
-	local now = os.clock()
-	if state.travelingUntil > now then
-		reject(player, state, index, false)
-		return
-	end
-	if not positionOk(player, state.depth) then
-		violation(player, state, "position out of range")
-		reject(player, state, index, true)
-		return
-	end
-
-	-- Power can only have gone up or down since the last block (upgrade, Mega
-	-- Drill edge, catch-up tick). Judge against the kinder of the two.
-	local powerNow = RoundState.power(player)
-	local required = Economy.minInterval(index, math.max(powerNow, state.lastPower))
-	local tolerance = math.max(D.ToleranceMin, required * D.ToleranceFraction)
-	if now - state.lastDigAt < required - tolerance then
-		violation(player, state, string.format("dug too fast (%.2fs < %.2fs)", now - state.lastDigAt, required))
-		reject(player, state, index, false)
-		return
-	end
-
-	state.depth = index
-	state.lastDigAt = now
-	state.lastPower = powerNow
+--- Opens one cell and applies its contents. Returns true if ore was added.
+local function applyCell(player: Player, state: RoundState.PlayerRound, col: number, row: number, cell: Types.Cell, blasted: { number }): boolean
+	state.opened[Grid.key(col, row)] = true
 	state.dugThisRound += 1
+	QuestService.add(player, "dig", 1)
 	if RoundState.megaActive then
 		state.megaDug += 1
 		RoundService.addMegaProgress(1)
 		QuestService.add(player, "mega", 1)
 	end
-	QuestService.add(player, "dig", 1)
-	QuestService.raise(player, "depth", index)
-
-	local data = DataService.get(player)
-	if data and index > data.stats.maxDepth then
-		data.stats.maxDepth = index
+	if row > state.depth then
+		onNewDepth(player, state, row)
 	end
 
-	local roll = OreGen.roll(state.seed, index)
-	local oreAdded = false
-	if roll.oreId then
-		local mutationId = roll.mutationId or "none"
-		if state.packUsed < RoundState.packCapacity(player) then
-			local perOre = state.backpack[roll.oreId]
-			if not perOre then
-				perOre = {}
-				state.backpack[roll.oreId] = perOre
+	local kind = cell.kind
+	if kind == "ore" then
+		return collectOre(player, state, cell)
+	elseif kind == "chest" then
+		local cash = CellGen.chestCash(row)
+		state.cash += cash
+		state.cashEarned += cash
+		QuestService.add(player, "chest", 1)
+		Remotes.get("Reward"):FireClient(player, "cash", cash, "Treasure chest")
+	elseif kind == "gem" then
+		MetaService.awardGems(player, S.Gem.gems, "Gem crystal")
+	elseif kind == "relic" then
+		MetaService.addRelic(player, 1)
+		Remotes.get("Reward"):FireClient(player, "relic", 1, "Ancient relic")
+		feed("relic", player, "unearthed an ancient relic!")
+	elseif kind == "tnt" then
+		QuestService.add(player, "tnt", 1)
+		local oreAdded = false
+		local queue = { { col, row } }
+		local head = 1
+		while head <= #queue and #blasted < MAX_BLAST_CELLS do
+			local center = queue[head]
+			head += 1
+			for _, p in CellGen.blastArea(center[1], center[2]) do
+				local c, r = p[1], p[2]
+				if not RoundState.isOpen(state, c, r) and #blasted < MAX_BLAST_CELLS then
+					table.insert(blasted, Grid.key(c, r))
+					local inner = CellGen.at(state.seed, c, r)
+					if inner.kind == "tnt" then
+						-- Chain reaction: open it, then blast from it too.
+						state.opened[Grid.key(c, r)] = true
+						state.dugThisRound += 1
+						if r > state.depth then
+							onNewDepth(player, state, r)
+						end
+						table.insert(queue, { c, r })
+					elseif applyCell(player, state, c, r, inner, blasted) then
+						oreAdded = true
+					end
+				end
 			end
-			perOre[mutationId] = (perOre[mutationId] or 0) + 1
-			state.packUsed += 1
-			oreAdded = true
-			MetaService.recordCollect(player, roll.oreId, mutationId)
-			QuestService.add(player, "collect", 1, roll.oreId)
-			if mutationId ~= "none" then
-				QuestService.add(player, "mutation", 1)
+		end
+		return oreAdded
+	elseif kind == "core" then
+		if not state.reachedCore then
+			state.reachedCore = true
+			state.reachedAt = os.clock()
+			local data = DataService.get(player)
+			if data then
+				data.stats.cores = (data.stats.cores or 0) + 1
 			end
-		elseif now - (lastPackFullNotice[player] or 0) > 3 then
-			lastPackFullNotice[player] = now
-			Remotes.get("Notify"):FireClient(player, "packfull", "Backpack full — ore left behind")
+			MetaService.awardGems(player, GameConfig.Round.Gems.CoreBonus, "Reached the core")
+			feed("core", player, "REACHED THE CORE!")
+			RoundService.coreReached(player)
 		end
 	end
-	if roll.relic then
-		MetaService.addRelic(player, 1)
-		Remotes.get("Notify"):FireClient(player, "relic", "Relic found")
+	return false
+end
+
+local function onDigRequest(player: Player, col: any, row: any)
+	local state = RoundState.get(player)
+	if not state then
+		return
 	end
+	local plot = PlotService.getPlot(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local hasRoot = plot ~= nil and root ~= nil and root:IsA("BasePart") and humanoid ~= nil and humanoid.Health > 0
+	local rootDx, rootY, rootDz = 0, 0, 0
+	if hasRoot and plot and root and root:IsA("BasePart") then
+		local p = root.Position
+		rootDx, rootY, rootDz = p.X - plot.origin.X, p.Y, p.Z - plot.origin.Z
+	end
+
+	local now = os.clock()
+	local powerNow = RoundState.power(player)
+	local verdict = DigRules.validate(col, row, {
+		seed = state.seed,
+		phase = RoundState.phase,
+		traveling = state.travelingUntil > now,
+		reachedCore = state.reachedCore,
+		isOpen = function(c: number, r: number): boolean
+			return RoundState.isOpen(state, c, r)
+		end,
+		hasRoot = hasRoot,
+		rootDx = rootDx,
+		rootY = rootY,
+		rootDz = rootDz,
+		now = now,
+		digClock = state.digClock,
+		-- Power can drop between the client's start and the server's check
+		-- (Mega Drill ending, catch-up tick); judge by the kinder value.
+		power = math.max(powerNow, state.lastPower),
+	})
+	if not verdict.ok then
+		if verdict.violation then
+			violation(player, state, verdict.reason)
+		end
+		if typeof(col) == "number" and typeof(row) == "number" and col == col and row == row then
+			Remotes.get("DigResult"):FireClient(player, col, row, false, state.depth)
+		end
+		return
+	end
+
+	state.digClock = verdict.digClock
+	state.lastPower = powerNow
+	state.lastDigAt = now
+	local cell = verdict.cell :: Types.Cell
+	local blasted: { number } = {}
+	local packBefore = state.packUsed
+	applyCell(player, state, col, row, cell, blasted)
 
 	RoundState.replicate(player)
-	if oreAdded then
+	if state.packUsed ~= packBefore then
 		RoundState.syncBackpack(player)
 	end
-	Remotes.get("DigResult"):FireClient(player, index, true, roll, state.depth)
-
-	if Layers.indexAt(index) ~= Layers.indexAt(index - 1) then
-		Remotes.get("Notify"):FireClient(player, "layer", Layers.layerAt(index).name)
-	end
-	if index >= GameConfig.CoreDepth then
-		state.reachedCore = true
-		RoundService.coreReached(player)
-	end
+	Remotes.get("DigResult"):FireClient(player, col, row, true, state.depth, if #blasted > 0 then blasted else nil)
 end
 
 function DigService.init()
-	local limiter = RateLimiter.new(GameConfig.RateLimits.DigRequest.capacity, GameConfig.RateLimits.DigRequest.refill)
-	Remotes.get("DigRequest").OnServerEvent:Connect(function(player, index)
+	local limits = GameConfig.RateLimits
+	local limiter = RateLimiter.new(limits.DigRequest.capacity, limits.DigRequest.refill)
+	local resyncLimiter = RateLimiter.new(2, 0.5)
+	Remotes.get("DigRequest").OnServerEvent:Connect(function(player, col, row)
 		if limiter:allow(player) then
-			onDigRequest(player, index)
+			onDigRequest(player, col, row)
+		end
+	end)
+	Remotes.get("RequestResync").OnServerEvent:Connect(function(player)
+		if resyncLimiter:allow(player) then
+			RoundState.sendResync(player)
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		limiter:forget(player)
+		resyncLimiter:forget(player)
 		lastPackFullNotice[player] = nil
 	end)
 end

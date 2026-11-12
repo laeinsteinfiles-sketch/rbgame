@@ -10,24 +10,28 @@ local Remotes = {}
 
 -- client -> server (intent only, never numbers the server already owns)
 Remotes.ClientToServer = {
-	"DigRequest", -- (blockIndex)
+	"DigRequest", -- (col, row)
+	"RequestResync", -- ()
 	"SellAll", -- ()
-	"BuyUpgrade", -- ("drill" | "pack")
+	"BuyUpgrade", -- ("pickaxe" | "pack")
 	"ClaimQuest", -- (questId)
 	"Travel", -- ("up" | "down")
-	"BuyMeta", -- ("digSpeed" | "pack")
+	"BuyMeta", -- ("digSpeed" | "pack" | "skin", id?)
 	"ClaimCollection", -- (oreId, thresholdIndex)
 	"OpenEgg", -- ()
 	"Equip", -- ("skin" | "pet", id)
+	"SaveSettings", -- ({ music, sfx, shake, autoDig })
 }
 
 -- server -> client
 Remotes.ServerToClient = {
-	"DigResult", -- (blockIndex, accepted, roll?)
-	"Resync", -- (depth)
+	"DigResult", -- (col, row, accepted, depth, extraKeys?)
+	"Resync", -- (seed, depth, openKeys)
 	"BackpackSync", -- (backpack, packUsed)
 	"SellResult", -- (cashGained, oreCount)
 	"Notify", -- (kind, message)
+	"Feed", -- (kind, playerName, text) server-wide moments
+	"Reward", -- (kind, amount, label) chest cash, gems, relics found while digging
 	"RoundResults", -- (standings, yourPlacement, gemsEarned)
 	"ProfileSync", -- (snapshot)
 	"QuestSync", -- (dayNumber, progress, claimed)

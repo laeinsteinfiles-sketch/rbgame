@@ -11,20 +11,22 @@ type QuestDef = Types.QuestDef
 local Quests = {}
 
 local POOL: { QuestDef } = {
-	{ id = "dig_200", kind = "dig", goal = 200, reward = 15, title = "Dig 200 blocks" },
-	{ id = "dig_600", kind = "dig", goal = 600, reward = 30, title = "Dig 600 blocks" },
-	{ id = "coal_30", kind = "collect", target = "coal", goal = 30, reward = 15, title = "Collect 30 Coal" },
-	{ id = "copper_20", kind = "collect", target = "copper", goal = 20, reward = 15, title = "Collect 20 Copper" },
-	{ id = "iron_15", kind = "collect", target = "iron", goal = 15, reward = 20, title = "Collect 15 Iron" },
-	{ id = "silver_8", kind = "collect", target = "silver", goal = 8, reward = 25, title = "Collect 8 Silver" },
-	{ id = "gold_5", kind = "collect", target = "gold", goal = 5, reward = 30, title = "Collect 5 Gold" },
-	{ id = "sell_2000", kind = "sell", goal = 2000, reward = 20, title = "Sell $2,000 of ore" },
-	{ id = "sell_8000", kind = "sell", goal = 8000, reward = 35, title = "Sell $8,000 of ore" },
-	{ id = "depth_300", kind = "depth", goal = 300, reward = 20, title = "Reach 300 m in one round" },
-	{ id = "depth_700", kind = "depth", goal = 700, reward = 40, title = "Reach 700 m in one round" },
+	{ id = "dig_150", kind = "dig", goal = 150, reward = 15, title = "Dig 150 blocks" },
+	{ id = "dig_500", kind = "dig", goal = 500, reward = 30, title = "Dig 500 blocks" },
+	{ id = "coal_25", kind = "collect", target = "coal", goal = 25, reward = 15, title = "Mine 25 Coal" },
+	{ id = "copper_20", kind = "collect", target = "copper", goal = 20, reward = 15, title = "Mine 20 Copper" },
+	{ id = "iron_15", kind = "collect", target = "iron", goal = 15, reward = 20, title = "Mine 15 Iron" },
+	{ id = "silver_10", kind = "collect", target = "silver", goal = 10, reward = 25, title = "Mine 10 Silver" },
+	{ id = "gold_6", kind = "collect", target = "gold", goal = 6, reward = 30, title = "Mine 6 Gold" },
+	{ id = "sell_1500", kind = "sell", goal = 1500, reward = 20, title = "Sell $1,500 of ore" },
+	{ id = "sell_6000", kind = "sell", goal = 6000, reward = 35, title = "Sell $6,000 of ore" },
+	{ id = "depth_150", kind = "depth", goal = 150, reward = 20, title = "Reach 150 m in one round" },
+	{ id = "depth_350", kind = "depth", goal = 350, reward = 40, title = "Reach 350 m in one round" },
 	{ id = "rounds_2", kind = "rounds", goal = 2, reward = 25, title = "Finish 2 rounds" },
 	{ id = "mutation_1", kind = "mutation", goal = 1, reward = 20, title = "Find a mutated ore" },
-	{ id = "mega_60", kind = "mega", goal = 60, reward = 25, title = "Dig 60 blocks during Mega Drills" },
+	{ id = "mega_50", kind = "mega", goal = 50, reward = 25, title = "Dig 50 blocks during Mega Drills" },
+	{ id = "chest_3", kind = "chest", goal = 3, reward = 25, title = "Open 3 treasure chests" },
+	{ id = "tnt_3", kind = "tnt", goal = 3, reward = 20, title = "Blow up 3 TNT blocks" },
 }
 
 local byId: { [string]: QuestDef } = {}

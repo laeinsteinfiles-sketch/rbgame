@@ -4,7 +4,6 @@
 -- and UI) and the sim. Nothing here touches Roblox APIs.
 
 local GameConfig = require(script.Parent.Parent.Config.GameConfig)
-local Layers = require(script.Parent.Layers)
 
 local Economy = {}
 
@@ -22,14 +21,16 @@ Economy.oreById = oreById
 Economy.mutationById = mutationById
 
 export type PowerInputs = {
-	drillTier: number,
+	pickaxeTier: number,
 	metaDigLevel: number,
 	megaActive: boolean,
 	catchUp: number, -- 0..MaxBonus
 }
 
-function Economy.drillPower(inputs: PowerInputs): number
-	local tier = GameConfig.Drills[math.clamp(inputs.drillTier, 1, #GameConfig.Drills)]
+export type UpgradeKind = "pickaxe" | "pack"
+
+function Economy.digPower(inputs: PowerInputs): number
+	local tier = GameConfig.Pickaxes[math.clamp(inputs.pickaxeTier, 1, #GameConfig.Pickaxes)]
 	local power = tier.power
 	power *= 1 + GameConfig.Meta.DigSpeed.perLevel * inputs.metaDigLevel
 	if inputs.megaActive then
@@ -39,13 +40,9 @@ function Economy.drillPower(inputs: PowerInputs): number
 	return power
 end
 
-function Economy.digTime(blockIndex: number, power: number): number
-	return Layers.hardnessAt(blockIndex) / power
-end
-
---- Minimum wall-clock gap the server accepts between two consecutive digs.
-function Economy.minInterval(blockIndex: number, power: number): number
-	return Economy.digTime(blockIndex, power) + GameConfig.Dig.DropTime
+--- Seconds to break a cell of `hardness` at `power`.
+function Economy.digTime(hardness: number, power: number): number
+	return math.max(GameConfig.Dig.MinDigTime, hardness / math.max(0.05, power))
 end
 
 function Economy.oreValue(oreId: string, mutationId: string?): number
@@ -63,10 +60,13 @@ function Economy.packCapacity(packTier: number, metaPackLevel: number): number
 end
 
 --- Cost to go from `currentTier` to the next one, or nil at the cap.
-function Economy.upgradeCost(kind: "drill" | "pack", currentTier: number): number?
-	local list = if kind == "drill" then GameConfig.Drills else GameConfig.Packs
-	local nextTier = list[currentTier + 1]
-	return if nextTier then nextTier.cost else nil
+function Economy.upgradeCost(kind: UpgradeKind, currentTier: number): number?
+	if kind == "pickaxe" then
+		local nextPickaxe = GameConfig.Pickaxes[currentTier + 1]
+		return if nextPickaxe then nextPickaxe.cost else nil
+	end
+	local nextPack = GameConfig.Packs[currentTier + 1]
+	return if nextPack then nextPack.cost else nil
 end
 
 function Economy.travelTime(depth: number): number
@@ -96,6 +96,18 @@ function Economy.collectionReward(oreId: string, thresholdIndex: number): number
 		return 0
 	end
 	return base * ore.rarity
+end
+
+--- Total sale value of a backpack.
+function Economy.backpackValue(backpack: { [string]: { [string]: number } }): (number, number)
+	local total, count = 0, 0
+	for oreId, mutations in backpack do
+		for mutationId, n in mutations do
+			total += Economy.oreValue(oreId, mutationId) * n
+			count += n
+		end
+	end
+	return total, count
 end
 
 return Economy

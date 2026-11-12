@@ -108,7 +108,7 @@ AssetIds.Gamepasses = {
 	DoubleGems = 0,
 	AutoDig = 0,
 	BigPack = 0,
-	DrillSkins = 0,
+	PickaxeSkins = 0,
 }
 
 function AssetIds.isSet(id: number): boolean

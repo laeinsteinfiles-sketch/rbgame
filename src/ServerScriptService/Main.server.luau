@@ -11,6 +11,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Services = script.Parent.Services
 
 Remotes.init()
+require(Services.WorldService).init()
 require(Services.DataService).init()
 require(Services.PlotService).init()
 require(Services.RoundState).init()
@@ -20,6 +21,7 @@ require(Services.ShopService).init()
 require(Services.TravelService).init()
 require(Services.DigService).init()
 require(Services.RoundService).init()
+require(Services.ToolService).init()
 
 local unsetPasses = {}
 for name, id in AssetIds.Gamepasses do

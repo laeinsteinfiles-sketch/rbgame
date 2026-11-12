@@ -1,9 +1,17 @@
 --!strict
 -- Explorer: ReplicatedStorage/Shared/Types (ModuleScript)
 -- Shared type definitions. Pure data shapes only; no Roblox types so the
--- economy sim can load these modules outside Studio.
+-- economy sim and self tests can load these modules outside Studio.
 
-export type DrillTier = { power: number, cost: number, name: string }
+export type PickaxeTier = {
+	name: string,
+	power: number,
+	cost: number,
+	headColor: string,
+	headMaterial: string,
+	glow: boolean,
+}
+
 export type PackTier = { capacity: number, cost: number, name: string }
 
 export type OreWeight = { id: string, weight: number }
@@ -13,13 +21,13 @@ export type LayerMood = {
 	outdoorAmbient: string,
 	fogColor: string,
 	fogEnd: number,
-	atmosphereColor: string,
-	atmosphereDensity: number,
-	atmosphereHaze: number,
+	brightness: number,
+	exposure: number,
 	saturation: number,
 	contrast: number,
 	tint: string,
-	brightness: number,
+	lampRange: number,
+	lampBrightness: number,
 }
 
 export type LayerDef = {
@@ -29,11 +37,16 @@ export type LayerDef = {
 	hardness: number,
 	hardnessEnd: number,
 	material: string,
-	groundColor: string,
-	wallColor: string,
-	accentColor: string,
-	mood: LayerMood,
+	hardMaterial: string,
+	color: string,
+	hardColor: string,
+	backColor: string,
+	accent: string,
+	richChance: number, -- ore chance inside a rich vein region
+	poorChance: number, -- ore chance everywhere else
+	caveChance: number, -- chance a cave pocket spawns in a region
 	ores: { OreWeight },
+	mood: LayerMood,
 }
 
 export type OreDef = {
@@ -53,6 +66,15 @@ export type MutationDef = {
 	color: string,
 }
 
+export type CellKind = "dirt" | "hard" | "ore" | "chest" | "tnt" | "gem" | "relic" | "cave" | "core"
+
+export type Cell = {
+	kind: CellKind,
+	oreId: string?,
+	mutationId: string?,
+	hardness: number,
+}
+
 export type QuestDef = {
 	id: string,
 	kind: string,
@@ -68,21 +90,16 @@ export type PetDef = {
 	tier: string,
 	gemBonus: number,
 	color: string,
+	accent: string,
+	flies: boolean,
 }
 
 export type SkinDef = {
 	id: string,
 	name: string,
 	relics: number,
-	color: string,
-	material: string,
-	bitColor: string,
-}
-
-export type BlockRoll = {
-	oreId: string?,
-	mutationId: string?,
-	relic: boolean,
+	handleColor: string,
+	trailColor: string,
 }
 
 export type Backpack = { [string]: { [string]: number } }

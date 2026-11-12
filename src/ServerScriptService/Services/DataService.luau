@@ -15,6 +15,8 @@ local DataService = {}
 
 export type CollectionEntry = { count: number, mutations: { [string]: number } }
 
+export type Settings = { music: number, sfx: number, shake: boolean, autoDig: boolean }
+
 export type ProfileData = {
 	version: number,
 	gems: number,
@@ -22,7 +24,8 @@ export type ProfileData = {
 	meta: { digSpeedLvl: number, packLvl: number },
 	collection: { [string]: CollectionEntry },
 	quests: { day: number, progress: { [string]: number }, claimed: { [string]: boolean } },
-	stats: { rounds: number, wins: number, maxDepth: number },
+	stats: { rounds: number, wins: number, maxDepth: number, cores: number },
+	settings: Settings,
 	purchases: {
 		skins: { [string]: boolean },
 		pets: { [string]: number },
@@ -41,7 +44,8 @@ local TEMPLATE: ProfileData = {
 	meta = { digSpeedLvl = 0, packLvl = 0 },
 	collection = {},
 	quests = { day = 0, progress = {}, claimed = {} },
-	stats = { rounds = 0, wins = 0, maxDepth = 0 },
+	stats = { rounds = 0, wins = 0, maxDepth = 0, cores = 0 },
+	settings = { music = 0.5, sfx = 0.8, shake = true, autoDig = false },
 	purchases = {
 		skins = { default = true },
 		pets = {},
@@ -76,6 +80,7 @@ function DataService.snapshot(data: ProfileData): { [string]: any }
 		meta = data.meta,
 		collection = data.collection,
 		stats = data.stats,
+		settings = data.settings,
 		purchases = data.purchases,
 	}
 end
@@ -145,6 +150,36 @@ end
 function DataService.init()
 	ProfileStore.SetConstant("AUTO_SAVE_PERIOD", GameConfig.Data.AutosaveSeconds)
 	local store = ProfileStore.New(GameConfig.Data.StoreName, TEMPLATE)
+
+	-- Settings are client preferences; validate shape and clamp, never trust.
+	local lastSave: { [Player]: number } = {}
+	Remotes.get("SaveSettings").OnServerEvent:Connect(function(player, incoming)
+		local now = os.clock()
+		if now - (lastSave[player] or 0) < 1 or typeof(incoming) ~= "table" then
+			return
+		end
+		lastSave[player] = now
+		local data = DataService.get(player)
+		if not data then
+			return
+		end
+		local s = data.settings
+		if typeof(incoming.music) == "number" and incoming.music == incoming.music then
+			s.music = math.clamp(incoming.music, 0, 1)
+		end
+		if typeof(incoming.sfx) == "number" and incoming.sfx == incoming.sfx then
+			s.sfx = math.clamp(incoming.sfx, 0, 1)
+		end
+		if typeof(incoming.shake) == "boolean" then
+			s.shake = incoming.shake
+		end
+		if typeof(incoming.autoDig) == "boolean" then
+			s.autoDig = incoming.autoDig
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		lastSave[player] = nil
+	end)
 
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, store, player)

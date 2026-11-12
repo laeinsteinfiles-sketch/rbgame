@@ -1,7 +1,8 @@
 --!strict
 -- Explorer: ServerScriptService/Services/ShopService (ModuleScript)
--- SellAll and BuyUpgrade. Sale value is computed here from the server's own
--- backpack; the client only says "sell".
+-- Selling and round upgrades. Sale value is computed here from the server's
+-- own backpack; the client only says "sell". Stepping on the sell pad sells
+-- automatically; the HUD button is the same code path.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,26 +21,24 @@ local function notify(player: Player, kind: string, message: string)
 	Remotes.get("Notify"):FireClient(player, kind, message)
 end
 
-function ShopService.sell(player: Player)
+function ShopService.sell(player: Player, quiet: boolean?)
 	local state = RoundState.get(player)
 	if not state or RoundState.phase ~= "Active" then
 		return
 	end
 	if state.packUsed <= 0 then
-		notify(player, "error", "Nothing to sell")
+		if not quiet then
+			notify(player, "error", "Nothing to sell yet. Go dig some ore!")
+		end
 		return
 	end
 	if not PlotService.isNearSellPad(player) then
-		notify(player, "error", "Sell at your trading post")
+		if not quiet then
+			notify(player, "error", "Sell at the SELL ORE stall on your island")
+		end
 		return
 	end
-	local total, count = 0, 0
-	for oreId, mutations in state.backpack do
-		for mutationId, n in mutations do
-			total += Economy.oreValue(oreId, mutationId) * n
-			count += n
-		end
-	end
+	local total, count = Economy.backpackValue(state.backpack)
 	state.backpack = {}
 	state.packUsed = 0
 	state.cash += total
@@ -53,15 +52,16 @@ end
 local function buy(player: Player, kind: any)
 	local state = RoundState.get(player)
 	if not state or RoundState.phase ~= "Active" then
+		notify(player, "error", "Upgrades open when the round starts")
 		return
 	end
-	if kind ~= "drill" and kind ~= "pack" then
+	if kind ~= "pickaxe" and kind ~= "pack" then
 		return
 	end
-	local tier = if kind == "drill" then state.drillTier else state.packTier
+	local tier = if kind == "pickaxe" then state.pickaxeTier else state.packTier
 	local cost = Economy.upgradeCost(kind, tier)
 	if not cost then
-		notify(player, "error", "Already maxed")
+		notify(player, "error", "Already maxed out")
 		return
 	end
 	if state.cash < cost then
@@ -70,20 +70,21 @@ local function buy(player: Player, kind: any)
 	end
 	state.cash -= cost
 	local name
-	if kind == "drill" then
-		state.drillTier += 1
-		name = GameConfig.Drills[state.drillTier].name
+	if kind == "pickaxe" then
+		state.pickaxeTier += 1
+		name = GameConfig.Pickaxes[state.pickaxeTier].name
 	else
 		state.packTier += 1
 		name = GameConfig.Packs[state.packTier].name
 	end
 	RoundState.replicate(player)
-	notify(player, "buy", name)
+	notify(player, "buy", `{name} unlocked!`)
 end
 
 function ShopService.init()
 	local sellLimiter = RateLimiter.new(GameConfig.RateLimits.SellAll.capacity, GameConfig.RateLimits.SellAll.refill)
 	local buyLimiter = RateLimiter.new(GameConfig.RateLimits.BuyUpgrade.capacity, GameConfig.RateLimits.BuyUpgrade.refill)
+	local lastPadSell: { [Player]: number } = {}
 
 	Remotes.get("SellAll").OnServerEvent:Connect(function(player)
 		if sellLimiter:allow(player) then
@@ -96,21 +97,26 @@ function ShopService.init()
 		end
 	end)
 
-	-- The pad prompt is the same code path as the HUD button.
 	for _, plot in PlotService.getAll() do
-		local prompt = plot.sellPad:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
-			prompt.Triggered:Connect(function(player)
-				if plot.owner == player and sellLimiter:allow(player) then
-					ShopService.sell(player)
-				end
-			end)
-		end
+		plot.sellPad.Touched:Connect(function(hit)
+			local character = hit:FindFirstAncestorOfClass("Model")
+			local player = character and Players:GetPlayerFromCharacter(character)
+			if not player or plot.owner ~= player then
+				return
+			end
+			local now = os.clock()
+			if now - (lastPadSell[player] or 0) < 1.5 then
+				return
+			end
+			lastPadSell[player] = now
+			ShopService.sell(player, true)
+		end)
 	end
 
 	Players.PlayerRemoving:Connect(function(player)
 		sellLimiter:forget(player)
 		buyLimiter:forget(player)
+		lastPadSell[player] = nil
 	end)
 end
 

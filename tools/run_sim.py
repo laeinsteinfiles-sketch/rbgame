@@ -17,7 +17,9 @@ MODULES = {
     "ReplicatedStorage/Shared/Hash": "src/ReplicatedStorage/Shared/Hash.luau",
     "ReplicatedStorage/Shared/Layers": "src/ReplicatedStorage/Shared/Layers.luau",
     "ReplicatedStorage/Shared/Economy": "src/ReplicatedStorage/Shared/Economy.luau",
-    "ReplicatedStorage/Shared/OreGen": "src/ReplicatedStorage/Shared/OreGen.luau",
+    "ReplicatedStorage/Shared/Grid": "src/ReplicatedStorage/Shared/Grid.luau",
+    "ReplicatedStorage/Shared/CellGen": "src/ReplicatedStorage/Shared/CellGen.luau",
+    "ReplicatedStorage/Shared/DigRules": "src/ReplicatedStorage/Shared/DigRules.luau",
     "ServerStorage/EconomySim": "tools/EconomySim.luau",
 }
 
@@ -77,9 +79,10 @@ def main():
     bundle = build_bundle() + f"""
 local deps = {{
     GameConfig = require(node("ReplicatedStorage/Config/GameConfig")),
+    Grid = require(node("ReplicatedStorage/Shared/Grid")),
     Layers = require(node("ReplicatedStorage/Shared/Layers")),
     Economy = require(node("ReplicatedStorage/Shared/Economy")),
-    OreGen = require(node("ReplicatedStorage/Shared/OreGen")),
+    CellGen = require(node("ReplicatedStorage/Shared/CellGen")),
 }}
 require(node("ServerStorage/EconomySim")).run(deps, {{ seeds = {args.seeds}, policy = {args.policy!r} }})
 """

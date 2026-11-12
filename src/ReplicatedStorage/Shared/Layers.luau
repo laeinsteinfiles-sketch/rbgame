@@ -1,7 +1,7 @@
 --!strict
 -- Explorer: ReplicatedStorage/Shared/Layers (ModuleScript)
--- Depth -> layer lookups and hardness. A block with index i spans depth
--- (i-1)..i, so its layer is decided by its top (i-1).
+-- Depth -> layer lookups and hardness. A cell in row r spans depth r-1..r,
+-- so its layer is decided by its top (r-1).
 
 local GameConfig = require(script.Parent.Parent.Config.GameConfig)
 local Types = require(script.Parent.Types)
@@ -37,15 +37,23 @@ function Layers.layerAt(depth: number): LayerDef
 	return list[Layers.indexAt(depth)]
 end
 
+--- Layer of the cell in row `row`.
+function Layers.ofRow(row: number): LayerDef
+	return list[Layers.indexAt(math.max(0, row - 1))]
+end
+
 --- Depth where the layer after `index` begins (CoreDepth for the last one).
 function Layers.endDepth(index: number): number
 	local nextLayer = list[index + 1]
 	return if nextLayer then nextLayer.startDepth else GameConfig.CoreDepth
 end
 
---- Hardness of block `index` (1-based). Ramps linearly through each layer.
-function Layers.hardnessAt(index: number): number
-	local top = index - 1
+--- Base hardness of row `row` (1-based). Ramps linearly through each layer.
+function Layers.hardnessAt(row: number): number
+	if row >= GameConfig.CoreDepth then
+		return GameConfig.CoreHardness
+	end
+	local top = math.max(0, row - 1)
 	local li = Layers.indexAt(top)
 	local layer = list[li]
 	local span = math.max(1, Layers.endDepth(li) - layer.startDepth)

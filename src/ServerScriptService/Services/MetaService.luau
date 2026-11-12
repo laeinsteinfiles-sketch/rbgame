@@ -18,7 +18,7 @@ local RateLimiter = require(script.Parent.RateLimiter)
 
 local MetaService = {}
 
-export type PassName = "DoubleGems" | "AutoDig" | "BigPack" | "DrillSkins"
+export type PassName = "DoubleGems" | "AutoDig" | "BigPack" | "PickaxeSkins"
 
 -- Fired after a perk purchase so RoundState can re-replicate power/capacity.
 MetaService.onPerkChanged = Signal.new() :: Signal.Signal<Player>
@@ -124,7 +124,7 @@ local function buyPerk(player: Player, kind: "digSpeed" | "pack")
 	end
 	DataService.push(player)
 	MetaService.onPerkChanged:Fire(player)
-	notify(player, "buy", if kind == "digSpeed" then "Drill tuning upgraded" else "Pack frame upgraded")
+	notify(player, "buy", if kind == "digSpeed" then "Dig speed upgraded!" else "Backpack upgraded!")
 end
 
 local function buySkin(player: Player, skinId: string)
@@ -191,7 +191,7 @@ local function equip(player: Player, kind: string, id: string)
 		return
 	end
 	if kind == "skin" then
-		local owned = data.purchases.skins[id] or MetaService.ownsPass(player, "DrillSkins")
+		local owned = data.purchases.skins[id] or MetaService.ownsPass(player, "PickaxeSkins")
 		if skinById[id] and owned then
 			data.purchases.equippedSkin = id
 		end
