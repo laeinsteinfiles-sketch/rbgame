@@ -14,6 +14,8 @@ local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local DataService = {}
 
 export type CollectionEntry = { count: number, mutations: { [string]: number } }
+-- Pets are owned per size: pets.mole = { normal = 2, huge = 1 }.
+export type PetCounts = { [string]: number }
 
 export type ProfileData = {
 	version: number,
@@ -22,17 +24,19 @@ export type ProfileData = {
 	meta: { digSpeedLvl: number, packLvl: number },
 	collection: { [string]: CollectionEntry },
 	quests: { day: number, progress: { [string]: number }, claimed: { [string]: boolean } },
-	stats: { rounds: number, wins: number, maxDepth: number },
+	stats: { rounds: number, wins: number, maxDepth: number, cores: number, bestCoreTime: number },
 	purchases: {
 		skins: { [string]: boolean },
-		pets: { [string]: number },
+		pets: { [string]: PetCounts },
 		claimedCollection: { [string]: boolean },
 		equippedSkin: string,
-		equippedPet: string,
+		equippedPet: string, -- "petId:sizeId" or ""
+		eggsOpened: number,
 	},
+	settings: { sfx: number, shake: boolean, autoDig: boolean },
 }
 
-local SCHEMA_VERSION = 1
+local SCHEMA_VERSION = 2
 
 local TEMPLATE: ProfileData = {
 	version = SCHEMA_VERSION,
@@ -41,19 +45,37 @@ local TEMPLATE: ProfileData = {
 	meta = { digSpeedLvl = 0, packLvl = 0 },
 	collection = {},
 	quests = { day = 0, progress = {}, claimed = {} },
-	stats = { rounds = 0, wins = 0, maxDepth = 0 },
+	stats = { rounds = 0, wins = 0, maxDepth = 0, cores = 0, bestCoreTime = 0 },
 	purchases = {
 		skins = { default = true },
 		pets = {},
 		claimedCollection = {},
 		equippedSkin = "default",
 		equippedPet = "",
+		eggsOpened = 0,
 	},
+	settings = { sfx = 0.8, shake = true, autoDig = false },
 }
 
 -- MIGRATIONS[n] upgrades a profile from version n to n+1. Add one entry per
 -- schema bump and raise SCHEMA_VERSION; Reconcile() only fills missing keys.
-local MIGRATIONS: { [number]: (data: any) -> () } = {}
+local MIGRATIONS: { [number]: (data: any) -> () } = {
+	-- v1 stored pets as plain counts and the equipped pet as a bare id;
+	-- v2 tracks sizes, so every v1 pet becomes a Normal one.
+	[1] = function(data)
+		local pets = {}
+		for petId, count in data.purchases.pets do
+			if typeof(count) == "number" and count > 0 then
+				pets[petId] = { normal = count }
+			end
+		end
+		data.purchases.pets = pets
+		local equipped = data.purchases.equippedPet
+		if typeof(equipped) == "string" and equipped ~= "" and not string.find(equipped, ":", 1, true) then
+			data.purchases.equippedPet = `{equipped}:normal`
+		end
+	end,
+}
 
 local profiles: { [Player]: any } = {}
 
@@ -77,6 +99,7 @@ function DataService.snapshot(data: ProfileData): { [string]: any }
 		collection = data.collection,
 		stats = data.stats,
 		purchases = data.purchases,
+		settings = data.settings,
 	}
 end
 
@@ -101,18 +124,6 @@ function DataService.get(player: Player): ProfileData?
 	return nil
 end
 
-function DataService.waitFor(player: Player, timeout: number): ProfileData?
-	local deadline = os.clock() + timeout
-	while os.clock() < deadline and player.Parent == Players do
-		local data = DataService.get(player)
-		if data then
-			return data
-		end
-		task.wait(0.1)
-	end
-	return nil
-end
-
 local function onPlayerAdded(store: any, player: Player)
 	local profile = store:StartSessionAsync(`Player_{player.UserId}`, {
 		Cancel = function()
@@ -124,6 +135,11 @@ local function onPlayerAdded(store: any, player: Player)
 		return
 	end
 	profile:AddUserId(player.UserId)
+	-- Migrate before Reconcile so old-shaped tables are converted, not merged.
+	if typeof(profile.Data.version) ~= "number" then
+		profile.Data.version = 1
+	end
+	migrate(profile.Data)
 	profile:Reconcile()
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
@@ -135,7 +151,6 @@ local function onPlayerAdded(store: any, player: Player)
 		profile:EndSession()
 		return
 	end
-	migrate(profile.Data)
 	profiles[player] = profile
 	player:SetAttribute("Loaded", true)
 	DataService.push(player)
